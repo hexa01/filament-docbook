@@ -8,12 +8,16 @@ use App\Models\Doctor;
 use App\Models\Patient;
 use App\Models\Specialization;
 use App\Models\User;
+use Carbon\Carbon;
 use Filament\Forms;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class UserResource extends Resource
@@ -37,15 +41,30 @@ class UserResource extends Resource
                     ->required()
                     ->label('Role')
                     ->options([
-                    'admin' => 'Admin',
-                    'doctor' => 'Doctor',
-                    'patient' => 'Patient',
-                ])->reactive(),
+                        'doctor' => 'Doctor',
+                        'patient' => 'Patient',
+                        'admin' => 'Admin',
+                    ])->live(),
                 Forms\Components\Select::make('specialization_id')
-                ->label('Specialization')
-                ->options(fn () => Specialization::pluck('name', 'id')->toArray())
-                ->required()
-                ->visible(fn ($get) => $get('role') == 'doctor'),
+                    ->label('Specialization')
+                    ->options(fn() => Specialization::pluck('name', 'id')->toArray())
+                    ->required()
+                    ->visible(fn($get) => $get('role') == 'doctor'),
+                Forms\Components\DatePicker::make('dob')
+                    ->label('Date of Birth')
+                    ->required()
+                    ->native(false)
+                    ->displayFormat('d/m/Y')
+                    ->visible(fn($get) => $get('role') == 'patient'),
+                Forms\Components\Select::make('gender')
+                    ->label('Gender')
+                    ->required()
+                    ->options([
+                        'male' => 'Male',
+                        'female' => 'Female',
+                        'other' => 'Other',
+                    ])
+                    ->visible(fn($get) => $get('role') == 'patient'),
                 Forms\Components\TextInput::make('address'),
                 Forms\Components\TextInput::make('phone')
                     ->tel(),
@@ -57,29 +76,7 @@ class UserResource extends Resource
     }
 
 
-    public static function mutateFormDataBeforeCreate(array $data): array
-    {
-        // Create the user
-        $user = User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'role' => $data['role'],
-        ]);
 
-        // Create related records based on role
-        if ($data['role'] == 'doctor') { // Doctor
-            Doctor::create([
-                'user_id' => $user->id,
-                'specialization_id' => $data['specialization_id'],
-            ]);
-        } elseif ($data['role'] == 'patient') { // Patient
-            Patient::create([
-                'user_id' => $user->id,
-            ]);
-        }
-
-        return $data;
-    }
 
 
     public static function table(Table $table): Table
@@ -87,18 +84,21 @@ class UserResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('email')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('role')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('address')
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('phone')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('email_verified_at')
                     ->dateTime()
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -107,11 +107,41 @@ class UserResource extends Resource
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-            ])
+            ])->defaultSort('name', 'asc')
             ->filters([
-                //
+
+                Filter::make('created_at')
+                    ->form([
+                        DatePicker::make('created_from'),
+                        DatePicker::make('created_until'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                $data['created_from'],
+                                fn(Builder $query, $date): Builder => $query->whereDate('created_at', '>=', $date),
+                            )
+                            ->when(
+                                $data['created_until'],
+                                fn(Builder $query, $date): Builder => $query->whereDate('created_at', '<=', $date),
+                            );
+                    })
+                    ->indicateUsing(function (array $data): array {
+                        $indicators = [];
+                        if ($data['created_from'] ?? null) {
+                            $indicators['created_from'] = 'Created from ' . Carbon::parse($data['created_from'])->toFormattedDateString();
+                        }
+                        if ($data['created_until'] ?? null) {
+                            $indicators['created_until'] = 'Created until ' . Carbon::parse($data['created_until'])->toFormattedDateString();
+                        }
+
+                        return $indicators;
+                    }),
+
+
             ])
             ->actions([
+                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([

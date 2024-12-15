@@ -29,7 +29,14 @@ class PatientResource extends Resource
                 Forms\Components\TextInput::make('user_id')
                     ->required()
                     ->numeric(),
-                Forms\Components\TextInput::make('gender'),
+                    Forms\Components\Select::make('gender')
+                    ->label('Gender')
+                    ->required()
+                    ->options([
+                        'male' => 'Male',
+                        'female' => 'Female',
+                        'other' => 'Other',
+                    ]),
                 Forms\Components\DatePicker::make('dob'),
             ]);
     }
@@ -38,11 +45,10 @@ class PatientResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('user_id')
-                    ->numeric()
+                Tables\Columns\TextColumn::make('user.name')
+                ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('gender')
-                    ->searchable(),
+                Tables\Columns\TextColumn::make('gender'),
                 Tables\Columns\TextColumn::make('dob')
                     ->date()
                     ->sortable(),

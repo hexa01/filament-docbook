@@ -2,44 +2,38 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\DoctorResource\Pages;
-use App\Filament\Resources\DoctorResource\RelationManagers;
-use App\Models\Doctor;
-use App\Models\Specialization;
+use App\Filament\Resources\ScheduleResource\Pages;
+use App\Filament\Resources\ScheduleResource\RelationManagers;
+use App\Models\Schedule;
 use Filament\Forms;
 use Filament\Forms\Form;
-use Filament\Forms\FormsComponent;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
-class DoctorResource extends Resource
+class ScheduleResource extends Resource
 {
-    protected static ?string $model = Doctor::class;
-    protected static ?string $navigationLabel = 'Doctor';
+    protected static ?string $model = Schedule::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-user';
-    protected static ?string $navigationGroup = 'User Management';
-    protected static ?int $navigationSort = 2;
+    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('user_id')
+                Forms\Components\TextInput::make('doctor_id')
                     ->required()
                     ->numeric(),
-                    Forms\Components\Select::make('specialization_id')
-                    ->label('Specialization')
-                    ->options(fn () => Specialization::pluck('name', 'id')->toArray())
+                Forms\Components\TextInput::make('day')
                     ->required(),
-                Forms\Components\TextInput::make('status')
+                Forms\Components\TextInput::make('start_time')
                     ->required(),
-                Forms\Components\Textarea::make('bio')
-                    ->columnSpanFull(),
+                Forms\Components\TextInput::make('end_time')
+                    ->required(),
+                Forms\Components\TextInput::make('slots')
+                    ->numeric(),
             ]);
     }
 
@@ -47,14 +41,16 @@ class DoctorResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('user.name')
+                Tables\Columns\TextColumn::make('doctor_id')
                     ->numeric()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('specialization.name')
-                    ->numeric()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('status')
+                Tables\Columns\TextColumn::make('day')
                     ->searchable(),
+                Tables\Columns\TextColumn::make('start_time'),
+                Tables\Columns\TextColumn::make('end_time'),
+                Tables\Columns\TextColumn::make('slots')
+                    ->numeric()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -65,14 +61,10 @@ class DoctorResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                SelectFilter::make('Specialization')
-                ->relationship('specialization', 'name')
-                ->searchable()
-                ->preload()
-                ->label('Filter by Specialization')
-                ->indicator('Specialization'),
+                //
             ])
             ->actions([
+                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([
@@ -92,9 +84,10 @@ class DoctorResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListDoctors::route('/'),
-            'create' => Pages\CreateDoctor::route('/create'),
-            'edit' => Pages\EditDoctor::route('/{record}/edit'),
+            'index' => Pages\ListSchedules::route('/'),
+            'create' => Pages\CreateSchedule::route('/create'),
+            'view' => Pages\ViewSchedule::route('/{record}'),
+            'edit' => Pages\EditSchedule::route('/{record}/edit'),
         ];
     }
 }

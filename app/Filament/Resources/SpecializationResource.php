@@ -4,9 +4,13 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\SpecializationResource\Pages;
 use App\Filament\Resources\SpecializationResource\RelationManagers;
+use App\Filament\Resources\SpecializationResource\RelationManagers\DoctorsRelationManager;
 use App\Models\Specialization;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Infolists\Components\Section;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Infolist;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -17,7 +21,7 @@ class SpecializationResource extends Resource
 {
     protected static ?string $model = Specialization::class;
     protected static ?string $navigationLabel = 'Specialization';
-
+    protected static ?string $navigationGroup = 'Specialization Management';
     protected static ?string $navigationIcon = 'heroicon-o-building-office';
 
     public static function form(Form $form): Form
@@ -35,6 +39,9 @@ class SpecializationResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->searchable(),
+                    Tables\Columns\TextColumn::make('doctors_count')->counts('doctors')
+                    ->label('Number of Doctors')
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -48,6 +55,7 @@ class SpecializationResource extends Resource
                 //
             ])
             ->actions([
+                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([
@@ -57,10 +65,25 @@ class SpecializationResource extends Resource
             ]);
     }
 
+    public static function infolist(Infolist $infolist): Infolist
+    {
+        return $infolist
+            ->schema([
+                Section::make('Specialization Information')
+                ->description('Information about the specialization')
+                ->schema([
+                    TextEntry::make('name')->label('Specialization name'),
+                    TextEntry::make('doctors_count')->label('Number of doctors for this specialization')
+                ])->columns(2)
+
+
+            ]);
+    }
+
     public static function getRelations(): array
     {
         return [
-            //
+            DoctorsRelationManager::class
         ];
     }
 

@@ -24,4 +24,13 @@ class Doctor extends Model
         return $this->hasMany(Schedule::class);
     }
 
+    protected static function booted()
+    {
+        static::deleting(function (Doctor $doctor) {
+            if ($doctor->user) {
+                $doctor->user->delete();  // Delete the related user
+            }
+        });
+    }
+
 }

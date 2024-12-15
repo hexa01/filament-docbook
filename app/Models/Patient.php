@@ -16,4 +16,13 @@ class Patient extends Model
     public function appointments(){
         return $this->hasMany(Appointment::class);
     }
+
+    protected static function booted()
+    {
+        static::deleting(function (Patient $patient) {
+            if ($patient->user) {
+                $patient->user->delete();  // Delete the related user
+            }
+        });
+    }
 }
