@@ -59,4 +59,9 @@ class User extends Authenticatable
         return $this->hasOne(Doctor::class);
     }
 
+    public function hasRole($role): bool
+    {
+        return $this->role === $role;
+    }
+
 }

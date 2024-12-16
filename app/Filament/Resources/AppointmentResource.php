@@ -8,8 +8,10 @@ use App\Models\Appointment;
 use App\Models\Doctor;
 use App\Models\Patient;
 use App\Models\Specialization;
+use App\Models\User;
 use App\Services\AppointmentService;
 use Carbon\Carbon;
+use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
@@ -26,6 +28,9 @@ class AppointmentResource extends Resource
     protected static ?string $model = Appointment::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+
+
+
 
     public static function form(Form $form): Form
     {
@@ -78,7 +83,6 @@ class AppointmentResource extends Resource
 
                                 $appointmentService = app(AppointmentService::class);
                                 $availableSlots = $appointmentService->generateAvailableSlots($doctor, $appointment_date);
-
                                 return collect($availableSlots)
                                     ->mapWithKeys(fn($slot) => [$slot => $slot])
                                     ->toArray();
@@ -90,13 +94,13 @@ class AppointmentResource extends Resource
                     ->schema([
                         Forms\Components\Select::make('status')
 
-                        ->options([
-                            'completed' => 'Completed',
-                            'missed' => 'Missed',
-                        ])
+                            ->options([
+                                'completed' => 'Completed',
+                                'missed' => 'Missed',
+                            ])
                             ->required(),
                     ])->columns(2)
-                    ->hidden(fn ($get) => !$get('record') || !$get('record.id')),
+                    ->hidden(fn($get) => !$get('record') || !$get('record.id')),
             ]);
     }
 
@@ -119,6 +123,9 @@ class AppointmentResource extends Resource
                     ->label("Slot"),
                 Tables\Columns\TextColumn::make('status')
                     ->searchable(),
+                Tables\Columns\TextColumn::make('payment.status')
+                    ->label('Payment Status')
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -128,9 +135,37 @@ class AppointmentResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->modifyQueryUsing(function (Builder $query) {
+                // Get the currently authenticated user
+                $user = User::find(Filament::auth()->user()->id);
+
+                // If the user is an admin, they can see all appointments
+                if ($user->hasRole('admin')) {
+                    return $query;
+                }
+
+                // If the user is a doctor, only their appointments are shown
+                if ($user->hasRole('doctor')) {
+                    return $query->where('doctor_id', $user->doctor->id);
+                }
+
+                // If the user is a patient, only their appointments are shown
+                if ($user->hasRole('patient')) {
+
+                    if ($user->patient) {
+                        return $query->where('patient_id', $user->patient->id);
+                    } else {
+                        return $query->whereRaw('1 = 0'); // If no patient relationship, show no appointments
+                    }
+                }
+
+                //default
+                return $query->whereRaw('1 = 0');
+            })
             ->filters([
                 //
             ])
+
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
@@ -139,9 +174,10 @@ class AppointmentResource extends Resource
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
-                ]),
+                ])
             ]);
     }
+
 
     public static function getRelations(): array
     {

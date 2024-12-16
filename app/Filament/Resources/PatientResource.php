@@ -46,6 +46,7 @@ class PatientResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('user.name')
+                ->label("Patient's Name")
                 ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('gender'),
