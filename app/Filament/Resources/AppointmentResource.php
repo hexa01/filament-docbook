@@ -9,6 +9,7 @@ use App\Models\Doctor;
 use App\Models\Patient;
 use App\Models\Specialization;
 use App\Services\AppointmentService;
+use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
@@ -30,55 +31,72 @@ class AppointmentResource extends Resource
     {
         return $form
             ->schema([
-                // Patient Selection
-                Select::make('patient_id')
-                    ->label('Patient Name')
-                    ->searchable()
-                    ->preload()
-                    ->options(
-                        Patient::with('user')
-                            ->get()->pluck('user.name', 'id')
-                    )
-                    ->required(),
 
-                // Doctor Selection
-                Select::make('doctor_id')
-                    ->label('Doctor Name')
-                    ->searchable()
-                    ->preload()
-                    ->options(function (callable $get) {
-                        return Doctor::with('user')
-                            ->get()
-                            ->pluck('user.name', 'id');
-                    })
-                    ->required()
-                    ->live(),
+                Forms\Components\Section::make('Basic Appointment Information')
+                    ->schema([
+                        // Patient Selection
+                        Select::make('patient_id')
+                            ->label('Patient Name')
+                            ->searchable()
+                            ->preload()
+                            ->options(
+                                Patient::with('user')
+                                    ->get()->pluck('user.name', 'id')
+                            )
+                            ->required(),
 
-                // Appointment Date
-                DatePicker::make('appointment_date')
-                    ->required()
-                    ->live(),
+                        // Doctor Selection
+                        Select::make('doctor_id')
+                            ->label('Doctor Name')
+                            ->searchable()
+                            ->preload()
+                            ->options(function (callable $get) {
+                                return Doctor::with('user')
+                                    ->get()
+                                    ->pluck('user.name', 'id');
+                            })
+                            ->required()
+                            ->live(),
 
-                // Available Slots
-                Select::make('start_time')
-                    ->label('Available Slots')
-                    ->options(function (callable $get) {
-                        $doctor = Doctor::find($get('doctor_id'));
-                        $appointment_date = $get('appointment_date');
+                        // Appointment Date
+                        DatePicker::make('appointment_date')
+                            ->required()
+                            ->live()
+                            ->minDate(Carbon::tomorrow())
+                            ->native(false),
 
-                        if (!$doctor || !$appointment_date) {
-                            return [];
-                        }
+                        // Available Slots
+                        Select::make('start_time')
+                            ->label('Available Slots')
+                            ->options(function (callable $get) {
+                                $doctor = Doctor::find($get('doctor_id'));
+                                $appointment_date = $get('appointment_date');
 
-                        $appointmentService = app(AppointmentService::class);
-                        $availableSlots = $appointmentService->generateAvailableSlots($doctor, $appointment_date);
+                                if (!$doctor || !$appointment_date) {
+                                    return [];
+                                }
 
-                        return collect($availableSlots)
-                            ->mapWithKeys(fn($slot) => [$slot => $slot])
-                            ->toArray();
-                    })
-                    ->required()
-                    ->searchable(),
+                                $appointmentService = app(AppointmentService::class);
+                                $availableSlots = $appointmentService->generateAvailableSlots($doctor, $appointment_date);
+
+                                return collect($availableSlots)
+                                    ->mapWithKeys(fn($slot) => [$slot => $slot])
+                                    ->toArray();
+                            })
+                            ->required()
+                            ->searchable(),
+                    ])->columns(2),
+                Forms\Components\Section::make('Appointment Status')
+                    ->schema([
+                        Forms\Components\Select::make('status')
+
+                        ->options([
+                            'completed' => 'Completed',
+                            'missed' => 'Missed',
+                        ])
+                            ->required(),
+                    ])->columns(2)
+                    ->hidden(fn ($get) => !$get('record') || !$get('record.id')),
             ]);
     }
 
@@ -86,16 +104,19 @@ class AppointmentResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('patient_id')
-                    ->numeric()
+                Tables\Columns\TextColumn::make('patient.user.name')
+                    ->searchable()
+                    ->label("Patient's Name")
                     ->sortable(),
-                Tables\Columns\TextColumn::make('doctor_id')
-                    ->numeric()
+                Tables\Columns\TextColumn::make('doctor.user.name')
+                    ->searchable()
+                    ->label("Doctor's Name")
                     ->sortable(),
                 Tables\Columns\TextColumn::make('appointment_date')
                     ->date()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('start_time'),
+                Tables\Columns\TextColumn::make('start_time')
+                    ->label("Slot"),
                 Tables\Columns\TextColumn::make('status')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('created_at')
