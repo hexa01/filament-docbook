@@ -2,7 +2,9 @@
 
 namespace App\Filament\Pages\Auth;
 
+use App\Models\Patient;
 use App\Models\Specialization;
+use App\Models\User;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -19,34 +21,44 @@ class Register extends BaseRegister
             'form' => $this->form(
                 $this->makeForm()
                     ->schema([
-                        TextInput::make('name')
-                            ->required(),
-                        TextInput::make('email')
-                            ->email()
-                            ->required(),
+                        $this->getNameFormComponent(),
+                        $this->getEmailFormComponent(),
                         DatePicker::make('dob')
-                            ->label('Date of Birth')
-                            ->required()
-                            ->native(false)
-                            ->displayFormat('d/m/Y'),
-                        Select::make('gender')
-                            ->label('Gender')
-                            ->required()
-                            ->options([
-                                'male' => 'Male',
-                                'female' => 'Female',
-                                'other' => 'Other',
-                            ]),
-                        TextInput::make('address'),
-                        TextInput::make('phone')
-                            ->tel(),
+                        ->label('Date of Birth')
+                        ->required()
+                        // ->native(false)
+                        ->displayFormat('d/m/Y'),
+                    Select::make('gender')
+                        ->label('Gender')
+                        ->required()
+                        ->options([
+                            'male' => 'Male',
+                            'female' => 'Female',
+                            'other' => 'Other',
+                        ]),
+                    TextInput::make('address'),
+                    TextInput::make('phone'),
+                        $this->getPasswordFormComponent(),
+                        $this->getPasswordConfirmationFormComponent(),
+
                         // Forms\Components\DateTimePicker::make('email_verified_at'),
-                        TextInput::make('password')
-                            ->password()
-                            ->required(),
                     ])
                     ->statePath('data'),
             ),
         ];
+    }
+
+
+    protected function afterRegister()
+    {
+        $user = $this->form->model;
+        $data = $this->data;
+            $patient = Patient::create([
+                'user_id' => $user->id,
+                'gender' => $data['gender'],
+                'dob' => $data['dob'],
+            ]);
+
+        
     }
 }

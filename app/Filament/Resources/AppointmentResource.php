@@ -11,6 +11,7 @@ use App\Models\Specialization;
 use App\Models\User;
 use App\Services\AppointmentService;
 use Carbon\Carbon;
+use Filament\Actions\RestoreAction;
 use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Components\DatePicker;
@@ -102,7 +103,8 @@ class AppointmentResource extends Resource
                     ])->columns(2)
                     ->hidden(fn($get) => !$get('record') || !$get('record.id')),
             ]);
-    }
+            // RestoreAction::make()->successRedirectUrl(route('posts.list'));
+        }
 
     public static function table(Table $table): Table
     {
