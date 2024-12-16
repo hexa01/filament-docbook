@@ -10,6 +10,8 @@ use App\Models\Patient;
 use App\Models\Specialization;
 use App\Services\AppointmentService;
 use Filament\Forms;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Form;
 use Filament\Forms\Set;
 use Filament\Resources\Resource;
@@ -26,57 +28,57 @@ class AppointmentResource extends Resource
 
     public static function form(Form $form): Form
     {
-
-        $appointmentService = app(AppointmentService::class); // Inject appointment service
         return $form
             ->schema([
-                Forms\Components\Select::make('patient_id')
+                // Patient Selection
+                Select::make('patient_id')
                     ->label('Patient Name')
                     ->searchable()
                     ->preload()
                     ->options(
                         Patient::with('user')
-                            ->get()->pluck('user.name','id')
+                            ->get()->pluck('user.name', 'id')
                     )
                     ->required(),
-                    // Forms\Components\Select::make('specialization_id')
-                    // ->label('Specialization')
-                    // ->options(fn() => Specialization::pluck('name', 'id')->toArray())
-                    // ->required()
-                    // ->preload()
-                    // ->searchable()
-                    // ->live(),
-                    Forms\Components\Select::make('doctor_id')
+
+                // Doctor Selection
+                Select::make('doctor_id')
                     ->label('Doctor Name')
                     ->searchable()
                     ->preload()
                     ->options(function (callable $get) {
-                        $specializationId = $get('specialization_id');
-
-                        return Doctor::
-                        // where('specialization_id', $specializationId)
-                        with('user')
-                            // ->with('user')
+                        return Doctor::with('user')
                             ->get()
                             ->pluck('user.name', 'id');
                     })
                     ->required()
                     ->live(),
 
+                // Appointment Date
+                DatePicker::make('appointment_date')
+                    ->required()
+                    ->live(),
 
+                // Available Slots
+                Select::make('start_time')
+                    ->label('Available Slots')
+                    ->options(function (callable $get) {
+                        $doctor = Doctor::find($get('doctor_id'));
+                        $appointment_date = $get('appointment_date');
 
-                // Forms\Components\TextInput::make('doctor_id')
-                //     ->required()
-                //     ->numeric(),
-                Forms\Components\DatePicker::make('appointment_date')
-                    ->required(),
-                Forms\Components\TextInput::make('start_time')
-                ->label('Available Slots')
-                    ->required(),
-                // Forms\Components\TextInput::make('status')
-                //     ->required(),
-                // Forms\Components\Textarea::make('doctor_message')
-                //     ->columnSpanFull(),
+                        if (!$doctor || !$appointment_date) {
+                            return [];
+                        }
+
+                        $appointmentService = app(AppointmentService::class);
+                        $availableSlots = $appointmentService->generateAvailableSlots($doctor, $appointment_date);
+
+                        return collect($availableSlots)
+                            ->mapWithKeys(fn($slot) => [$slot => $slot])
+                            ->toArray();
+                    })
+                    ->required()
+                    ->searchable(),
             ]);
     }
 
@@ -109,7 +111,9 @@ class AppointmentResource extends Resource
                 //
             ])
             ->actions([
+                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
