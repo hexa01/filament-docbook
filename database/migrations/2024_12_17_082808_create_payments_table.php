@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('pid')->nullable();
             $table->float('amount');
             $table->enum('status',['paid','unpaid'])->default('unpaid');
+            $table->string('payment_method')->nullable();
             $table->timestamps();
         });
     }

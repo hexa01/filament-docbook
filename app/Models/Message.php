@@ -4,14 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Payment extends Model
+class Message extends Model
 {
     protected $fillable = [
         'appointment_id',
-        'pid',
-        'amount',
-        'status',
-        'payment_method',
+        'doctor_message'
     ];
 
     public function appointment(){

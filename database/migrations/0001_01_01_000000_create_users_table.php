@@ -18,6 +18,8 @@ return new class extends Migration
             $table->enum('role', ['patient', 'doctor', 'admin'])->default('patient');
             $table->string('address')->nullable();
             $table->string('phone')->nullable();
+            // $table->string('gender')->nullable();
+            // $table->date('dob')->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();

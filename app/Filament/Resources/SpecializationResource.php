@@ -16,6 +16,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\DB;
 
 class SpecializationResource extends Resource
 {
@@ -29,7 +30,10 @@ class SpecializationResource extends Resource
         return $form
             ->schema([
                 Forms\Components\TextInput::make('name')
-                    ->required(),
+                    ->required()
+                    // ->exists('specializations', 'name')
+                    ->maxLength(255),
+
             ]);
     }
 

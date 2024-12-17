@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Services\AppointmentService;
+use App\Services\MessageService;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -14,6 +15,9 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->singleton(AppointmentService::class, function ($app) {
             return new AppointmentService();
+        });
+        $this->app->singleton(MessageService::class, function ($app) {
+            return new MessageService();
         });
     }
 

@@ -14,7 +14,6 @@ class CreateUser extends CreateRecord
 {
     protected static string $resource = UserResource::class;
 
-
     protected function afterCreate(): void
     {
         $record = $this->record;  // Access the created User model
@@ -44,5 +43,10 @@ class CreateUser extends CreateRecord
                 'dob' => $data['dob'],
             ]);
         }
+    }
+
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('index');
     }
 }

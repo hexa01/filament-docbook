@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\AppointmentResource\Pages;
 use App\Filament\Resources\AppointmentResource\RelationManagers;
+use App\Filament\Resources\AppointmentResource\RelationManagers\MessageRelationManager;
 use App\Models\Appointment;
 use App\Models\Doctor;
 use App\Models\Patient;
@@ -11,6 +12,8 @@ use App\Models\Specialization;
 use App\Models\User;
 use App\Services\AppointmentService;
 use Carbon\Carbon;
+use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\RestoreAction;
 use Filament\Facades\Filament;
 use Filament\Forms;
@@ -18,15 +21,26 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Form;
 use Filament\Forms\Set;
+use Filament\Infolists\Components\Section;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Infolist;
+use Filament\Notifications\Notification;
+use Filament\Resources\Components\Tab;
 use Filament\Resources\Resource;
+use Filament\Support\Enums\ActionSize;
 use Filament\Tables;
+use Filament\Tables\Actions\BulkAction;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class AppointmentResource extends Resource
 {
     protected static ?string $model = Appointment::class;
+    protected static ?string $navigationGroup = 'Appointment Management';
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
@@ -103,8 +117,8 @@ class AppointmentResource extends Resource
                     ])->columns(2)
                     ->hidden(fn($get) => !$get('record') || !$get('record.id')),
             ]);
-            // RestoreAction::make()->successRedirectUrl(route('posts.list'));
-        }
+        // RestoreAction::make()->successRedirectUrl(route('posts.list'));
+    }
 
     public static function table(Table $table): Table
     {
@@ -165,18 +179,171 @@ class AppointmentResource extends Resource
                 return $query->whereRaw('1 = 0');
             })
             ->filters([
-                //
+
+                // Filter::make('appointment_date')
+                // ->label('Appointment Date')
+                // ->form([
+                //     DatePicker::make('date')
+                //         ->placeholder('Select Appointment Date')
+                //         ->label('Select Appointment Date'),
+                // ])
+                // ->query(function (Builder $query, array $data) {
+                //     if ($data['date']) {
+                //         // Filter the records based on the selected appointment date
+                //         $query->whereDate('appointment_date', Carbon::parse($data['date'])->toDateString());
+                //     }
+                // })
+                // ->indicateUsing(function (array $data): ?string {
+                //     if (! isset($data['date']) || ! $data['date']) {
+                //         return null;
+                //     }
+
+                //     // Display the selected date in a user-friendly format
+                //     return 'Appointment on ' . Carbon::parse($data['date'])->toFormattedDateString();
+                // }),
+
+                // SelectFilter::make('day')
+                //     ->options([
+                //         'Sunday' => 'Sunday',
+                //         'Monday' => 'Monday',
+                //         'Tuesday' => 'Tuesday',
+                //         'Wednesday' => 'Wednesday',
+                //         'Thursday' => 'Thursday',
+                //         'Friday' => 'Friday',
+                //         'Saturday' => 'Saturday',
+                //     ])
+                //     ->label('Day')
+                //     ->placeholder('All Days'),
+
+                // SelectFilter::make('doctor_id')
+                //     ->options(function () {
+                //         return Doctor::all()->pluck('user.name', 'id')->toArray();
+                //     })
+                //     ->label('Doctor')
+                //     ->placeholder('Select Doctor'),
+
+
+
             ])
+
+
 
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\DeleteAction::make()
+                    ->successNotification(function ($record) {
+                        return Notification::make()
+                            ->success()
+                            ->icon('heroicon-o-trash')
+                            ->title('Appointment Removed!')
+                            ->body("The appointment with Dr. {$record->doctor->user->name} for {$record->patient->user->name} on {$record->appointment_date} has been removed.");
+                    }),
+                // ActionGroup::make([
+                //     Action::make('review')
+                //         ->label('Leave a Review')
+                //         ->color('teal')
+                //         ->icon('heroicon-o-pencil-square')
+                //         ->visible(fn($record) => $record->status === 'completed' && !$record->review)
+                //         ->url(fn($record) => route('filament.admin.resources.reviews.create', ['appointment_id' => $record->id])),
+
+
+                //     Action::make('view_review')
+                //         ->label('View Review')
+                //         ->color('indigo')
+                //         ->icon('heroicon-o-eye')
+                //         ->visible(fn($record) => $record->review)
+                //         ->url(fn($record) => route('filament.admin.resources.reviews.view', ['record' => $record->review])),
+
+                //     Action::make('updateStatus')
+                //         ->label('Update Status')
+                //         ->color('primary')
+                //         ->icon('heroicon-o-pencil')
+                //         ->form([
+                //             Select::make('status')
+                //                 ->label('Select Status')
+                //                 ->options([
+                //                     'pending' => 'Pending',
+                //                     'confirmed' => 'Confirmed',
+                //                     'completed' => 'Completed',
+                //                 ])
+                //                 ->default('pending')
+                //                 ->required(),
+                //         ])
+                //         ->action(function ($record, $data) {
+                //             // Update the status for the specific record
+                //             $record->update([
+                //                 'status' => $data['status'],
+                //             ]);
+
+                //             Notification::make()
+                //                 ->title('Status Updated')
+                //                 ->success()
+                //                 ->send();
+                //         }),
+                // ])
+                //     ->label('More actions')
+                //     ->icon('heroicon-m-ellipsis-vertical')
+                //     ->size(ActionSize::Small)
+                //     ->color('secondary')
+                //     ->button(),
+
+
             ])
+
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ])
+
+                // Bulk Action for updating the status of selected records
+                BulkAction::make('updateStatusBulk')
+                    ->label('Update Status for Selected')
+                    ->form([
+                        Select::make('status')
+                            ->label('Select Status')
+                            ->options([
+                                'pending' => 'Pending',
+                                'confirmed' => 'Confirmed',
+                                'completed' => 'Completed',
+                            ])
+                            ->required(),
+                    ])
+                    ->action(function ($records, $data) {
+                        // Update the status for selected records
+                        foreach ($records as $record) {
+                            $record->update([
+                                'status' => $data['status'],
+                            ]);
+                        }
+
+                        Notification::make()
+                            ->title('Status Updated')
+                            ->success()
+                            ->send();
+                    }),
+
+            ]);
+    }
+
+    public static function infolist(Infolist $infolist): Infolist
+    {
+        return $infolist
+            ->schema([
+                Section::make('Basic Appointment Information')
+                ->schema([
+                    TextEntry::make('patient.user.name')->label('Patient Name'),
+                    TextEntry::make('doctor.user.name')->label('Doctor Name'),
+                    TextEntry::make('appointment_date')->label('Appointment Date'),
+                    TextEntry::make('start_time')->label('Appointment Slot Time'),
+                    TextEntry::make('status')->label('Appointment Status'),
+                    // TextEntry::make('doctors_count')->label('Number of doctors for this specialization')
+                ])->columns(2),
+                Section::make('Payment Information')
+                ->schema([
+                    TextEntry::make('payment.status')->label('Payment Status'),
+                    TextEntry::make('payment.payment_method')->label('Payment Method'),
+                    // TextEntry::make('doctors_count')->label('Number of doctors for this specialization')
+                ])->columns(2)
+
+
             ]);
     }
 
@@ -184,7 +351,7 @@ class AppointmentResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            MessageRelationManager::class,
         ];
     }
 
@@ -193,7 +360,57 @@ class AppointmentResource extends Resource
         return [
             'index' => Pages\ListAppointments::route('/'),
             'create' => Pages\CreateAppointment::route('/create'),
+            'view' => Pages\ViewAppointment::route('/{record}'),
             'edit' => Pages\EditAppointment::route('/{record}/edit'),
         ];
     }
+
+
+
+    // public function getTabs(): array
+    // {
+    //     $today = Carbon::today();
+
+    //     return [
+    //         'All' => Tab::make(),
+    //         'Today' => Tab::make()
+    //             ->modifyQueryUsing(
+    //                 fn(Builder $query) =>
+    //                 $query->whereDate('appointment_date', '=', $today)
+    //             )
+    //             ->badge(
+    //                 Appointment::whereDate('appointment_date', '=', $today)->count()
+    //             ),
+    //         'This Week' => Tab::make()
+    //             ->modifyQueryUsing(
+    //                 fn(Builder $query) =>
+    //                 $query->whereDate('appointment_date', '>=', $today->startOfWeek())
+    //             )
+    //             ->badge(
+    //                 Appointment::whereDate('appointment_date', '>=', $today->startOfWeek())->count()
+    //             ),
+    //         'This Month' => Tab::make()
+    //             ->modifyQueryUsing(
+    //                 fn(Builder $query) =>
+    //                 $query->whereDate('appointment_date', '>=', $today->startOfMonth())
+    //             )
+    //             ->badge(
+    //                 Appointment::whereDate('appointment_date', '>=', $today->startOfMonth())->count()
+    //             ),
+    //         'This Year' => Tab::make()
+    //             ->modifyQueryUsing(
+    //                 fn(Builder $query) =>
+    //                 $query->whereDate('appointment_date', '>=', $today->startOfYear())
+    //             )
+    //             ->badge(
+    //                 Appointment::whereDate('appointment_date', '>=', $today->startOfYear())->count()
+    //             ),
+    //     ];
+    // }
+
+    // public static function canEdit(Model $record): bool
+    // {
+
+    //     return $record->status == 'pending';
+    // }
 }

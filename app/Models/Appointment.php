@@ -19,4 +19,8 @@ class Appointment extends Model
         return $this->hasOne(Payment::class);
     }
 
+    public function message(){
+        return $this->hasOne(Message::class);
+    }
+
 }

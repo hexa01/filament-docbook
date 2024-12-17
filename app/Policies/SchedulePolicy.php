@@ -45,6 +45,14 @@ class SchedulePolicy
      */
     public function update(User $user, Schedule $schedule): bool
     {
+                // Admin can update all doctor's schedule
+                if ($user->hasRole('admin')) {
+                    return true;
+                }
+                // Doctor can update their own schedule
+                if ($user->hasRole('doctor') && $user->id === $schedule->doctor->user->id) {
+                    return true;
+                }
         return false;
     }
 
