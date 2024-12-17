@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Appointment;
 use App\Models\User;
 use Carbon\Carbon;
+use Filament\Facades\Filament;
 
 class AppointmentService
 {
@@ -34,4 +35,85 @@ class AppointmentService
             ->pluck('start_time')->toArray();
         return array_filter($available_slots, fn($slot) => !in_array($slot, $booked_slots));
     }
+
+    public function optionsForStatusUpdate()
+    {
+        $user = User::find(Filament::auth()->user()->id);
+        if ($user->hasRole('doctor')) {
+            return [
+                'completed' => 'Completed',
+                'missed' => 'Missed',
+            ];
+        }
+
+        if ($user->hasRole('admin')) {
+            return [
+                'pending' => 'Pending',
+                'Booked' => 'Booked',
+                'completed' => 'Completed',
+                'missed' => 'Missed',
+            ];
+        }
+    }
+
+    public function formatAppointmentAsReadableText($appointment)
+{
+    $user = User::find(Filament::auth()->user()->id);
+
+    // Initialize the formatted text variable
+    $labeledText = '';
+
+    // Format the appointment text based on the user's role
+    if ($user->hasRole('doctor')) {
+        $labeledText = "Appointment with {$appointment->patient->user->name} on {$appointment->appointment_date} at {$appointment->start_time}";
+    }
+
+    if ($user->hasRole('admin')) {
+        $labeledText = "Appointment of {$appointment->patient->user->name} with Dr. {$appointment->doctor->user->name} on {$appointment->appointment_date} at {$appointment->start_time}";
+    }
+
+    return $labeledText;
+}
+
+
+public function formatAppointmentsAsReadableText($appointments)
+{
+    // Check if the input is a single appointment or a collection
+    if (!$appointments instanceof \Illuminate\Support\Collection) {
+        $appointments = collect([$appointments]); // Convert to a collection if it's a single appointment
+    }
+
+    // Initialize an empty array to hold the formatted appointment texts
+    $labeledTexts = [];
+
+    // Iterate over each appointment and format it using the existing method
+    foreach ($appointments as $appointment) {
+        $labeledTexts[$appointment->id] = $this->formatAppointmentAsReadableText($appointment);
+    }
+
+    return $labeledTexts;
+}
+
+
+    // public function formatAppointmentsAsReadableText($appointments)
+    // {
+    //     $user = User::find(Filament::auth()->user()->id);
+    //     if ($user->hasRole('doctor')) {
+    //         $labeledText = $appointments->mapWithKeys(function ($appointment) {
+    //             return [
+    //                 $appointment->id => "Appointment with {$appointment->patient->user->name} on {$appointment->appointment_date} at {$appointment->start_time}",
+    //             ];
+    //         })->toArray();
+    //     }
+
+    //     if ($user->hasRole('admin')) {
+    //         $labeledText = $appointments->mapWithKeys(function ($appointment) {
+    //             return [
+    //                 $appointment->id => "Appointment of {$appointment->patient->user->name} with Dr. {$appointment->doctor->user->name} on {$appointment->appointment_date} at {$appointment->start_time}",
+    //             ];
+    //         })->toArray();
+    //     }
+    //     return $labeledText;
+
+    // }
 }

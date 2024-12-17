@@ -32,25 +32,4 @@ class MessageService
         return $appointments;
     }
 
-    public function formatAppointmentsForDoctorMessage($appointments)
-    {
-        $user = User::find(Filament::auth()->user()->id);
-        if ($user->hasRole('doctor')) {
-            $labeledText = $appointments->mapWithKeys(function ($appointment) {
-                return [
-                    $appointment->id => "Appointment with {$appointment->patient->user->name} on {$appointment->appointment_date} at {$appointment->start_time}",
-                ];
-            })->toArray();
-        }
-
-        if ($user->hasRole('admin')) {
-            $labeledText = $appointments->mapWithKeys(function ($appointment) {
-                return [
-                    $appointment->id => "{$appointment->patient->user->name} with Dr. {$appointment->doctor->user->name} on {$appointment->appointment_date} at {$appointment->start_time}",
-                ];
-            })->toArray();
-        }
-        return $labeledText;
-
-    }
 }

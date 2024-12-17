@@ -7,6 +7,7 @@ use App\Filament\Resources\MessageResource\RelationManagers;
 use App\Models\Appointment;
 use App\Models\Message;
 use App\Models\User;
+use App\Services\AppointmentService;
 use App\Services\MessageService;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
@@ -35,7 +36,8 @@ class MessageResource extends Resource
                     ->options(function (){
                         $messageService = app(MessageService::class);
                         $appointments = $messageService->getCompletedAppointments();
-                        return $messageService->formatAppointmentsForDoctorMessage($appointments);
+                        return app(AppointmentService::class)->formatAppointmentsAsReadableText($appointments);
+                        // return $AppointmentService->formatAppointmentsAsReadableText($appointments);
                         }
                     )
                     ->searchable()

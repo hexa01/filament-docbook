@@ -52,17 +52,17 @@ class AppointmentPolicy
      */
     public function update(User $user, Appointment $appointment): bool
     {
-                     // Admin can view all appointments
+                     // Admin can update all appointments
                      if ($user->hasRole('admin')) {
                         return true;
                     }
 
-                    // Doctor can view their own appointments
-                    if ($user->hasRole('doctor') && $user->id === $appointment->doctor->user->id) {
-                        return true;
-                    }
+                    // Doctor can update their own appointments
+                    // if ($user->hasRole('doctor') && $user->id === $appointment->doctor->user->id) {
+                    //     return true;
+                    // }
 
-                    // Patient can view their own appointments
+                    // Patient can update their own appointments
                     if ($user->hasRole('patient') && $user->id === $appointment->patient->user->id) {
                         return true;
                     }

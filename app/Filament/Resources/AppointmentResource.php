@@ -12,8 +12,6 @@ use App\Models\Specialization;
 use App\Models\User;
 use App\Services\AppointmentService;
 use Carbon\Carbon;
-use Filament\Actions\Action;
-use Filament\Actions\ActionGroup;
 use Filament\Actions\RestoreAction;
 use Filament\Facades\Filament;
 use Filament\Forms;
@@ -29,7 +27,8 @@ use Filament\Resources\Components\Tab;
 use Filament\Resources\Resource;
 use Filament\Support\Enums\ActionSize;
 use Filament\Tables;
-use Filament\Tables\Actions\BulkAction;
+use Filament\Tables\Actions\Action;
+use Filament\Tables\Actions\ActionGroup;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -49,6 +48,7 @@ class AppointmentResource extends Resource
 
     public static function form(Form $form): Form
     {
+
         return $form
             ->schema([
 
@@ -218,87 +218,102 @@ class AppointmentResource extends Resource
                             ->title('Appointment Removed!')
                             ->body("The appointment with Dr. {$record->doctor->user->name} for {$record->patient->user->name} on {$record->appointment_date} has been removed.");
                     }),
-                // ActionGroup::make([
+
+                //   if put action put it inside actionGroup
                 //     Action::make('review')
                 //         ->label('Leave a Review')
                 //         ->color('teal')
                 //         ->icon('heroicon-o-pencil-square')
                 //         ->visible(fn($record) => $record->status === 'completed' && !$record->review)
                 //         ->url(fn($record) => route('filament.admin.resources.reviews.create', ['appointment_id' => $record->id])),
-
-
                 //     Action::make('view_review')
                 //         ->label('View Review')
                 //         ->color('indigo')
                 //         ->icon('heroicon-o-eye')
                 //         ->visible(fn($record) => $record->review)
                 //         ->url(fn($record) => route('filament.admin.resources.reviews.view', ['record' => $record->review])),
-
-                //     Action::make('updateStatus')
-                //         ->label('Update Status')
-                //         ->color('primary')
-                //         ->icon('heroicon-o-pencil')
-                //         ->form([
-                //             Select::make('status')
-                //                 ->label('Select Status')
-                //                 ->options([
-                //                     'pending' => 'Pending',
-                //                     'confirmed' => 'Confirmed',
-                //                     'completed' => 'Completed',
-                //                 ])
-                //                 ->default('pending')
-                //                 ->required(),
-                //         ])
-                //         ->action(function ($record, $data) {
-                //             // Update the status for the specific record
-                //             $record->update([
-                //                 'status' => $data['status'],
-                //             ]);
-
-                //             Notification::make()
-                //                 ->title('Status Updated')
-                //                 ->success()
-                //                 ->send();
-                //         }),
-                // ])
-                //     ->label('More actions')
-                //     ->icon('heroicon-m-ellipsis-vertical')
-                //     ->size(ActionSize::Small)
-                //     ->color('secondary')
-                //     ->button(),
-
-
-            ])
-
-            ->bulkActions([
-
-                // Bulk Action for updating the status of selected records
-                BulkAction::make('updateStatusBulk')
-                    ->label('Update Status for Selected')
-                    ->form([
-                        Select::make('status')
-                            ->label('Select Status')
-                            ->options([
-                                'pending' => 'Pending',
-                                'confirmed' => 'Confirmed',
-                                'completed' => 'Completed',
-                            ])
-                            ->required(),
-                    ])
-                    ->action(function ($records, $data) {
-                        // Update the status for selected records
-                        foreach ($records as $record) {
-                            $record->update([
-                                'status' => $data['status'],
-                            ]);
-                        }
-
+                ActionGroup::make([
+                    // Tables\Actions\ViewAction::make(),
+                    Action::make('markCompleted')
+                    ->label('Mark as Completed')
+                    ->color('success')
+                    ->icon('heroicon-s-check-circle')
+                    ->action(function ($record) {
+                        $record->update(['status' => 'completed']);
+                        $text = app(AppointmentService::class)->formatAppointmentAsReadableText($record);
                         Notification::make()
-                            ->title('Status Updated')
+                            ->title('Appointment Completed')
                             ->success()
+                            ->body("$text has been marked as completed.")
                             ->send();
                     }),
 
+                Action::make('markMissed')
+                    ->label('Mark as Missed')
+                    ->color('danger')
+                    ->icon('heroicon-s-x-circle')
+                    ->action(function ($record) {
+                        $record->update(['status' => 'missed']);
+                        $text = app(AppointmentService::class)->formatAppointmentAsReadableText($record);
+                        Notification::make()
+                            ->title('Appointment Marked as Missed')
+                            ->success()
+                            ->body("$text has been marked as missed.")
+                            ->send();
+                    }),
+                    Action::make('updateStatus')
+                        ->label('Update Status')
+                        ->color('primary')
+                        ->icon('heroicon-s-pencil')
+                        ->form([
+                            Select::make('status')
+                                ->label('Select New Status')
+                                ->options(fn() => app(AppointmentService::class)->optionsForStatusUpdate())
+                                ->placeholder('Choose a status...')
+                                ->required(),
+                        ])
+                        ->action(function ($record, $data) {
+                            $record->update(['status' => $data['status']]);
+
+                            Notification::make()
+                                ->title('Status Successfully Updated')
+                                ->success()
+                                ->body('The appointment status has been updated to ' . ucfirst($data['status']) . '.')
+                                ->send();
+                        }),
+                ])
+                    ->tooltip('More Actions')
+                    ->label('More Actions')
+                    ->icon('heroicon-s-cog')
+                    ->size(ActionSize::ExtraLarge)
+                    ->color('primary')
+                    // ->button()
+            ])
+            ->bulkActions([
+                // Bulk Action for updating the status of selected records
+                // BulkAction::make('updateStatusBulk')
+                //     ->label('Update Status for Selected')
+                //     ->form([
+                //         Select::make('status')
+                //             ->label('Select Status')
+                //             ->options([
+                //                 'completed' => 'Completed',
+                //                 'missed' => 'Missed',
+                //             ])
+                //             ->required(),
+                //     ])->action(function ($records, $data) {
+                //         // Update the status for selected records
+                //         foreach ($records as $record) {
+                //             $record->update([
+                //                 'status' => $data['status'],
+                //             ]);
+                //         }
+
+                //         Notification::make()
+                //             ->title('Status Updated')
+                //             ->success()
+                //             ->send();
+                //     }),
             ]);
     }
 
