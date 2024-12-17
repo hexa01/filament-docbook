@@ -32,27 +32,20 @@ class MessageResource extends Resource
             ->schema([
                 Forms\Components\Select::make('appointment_id')
                     ->label('Select Completed Appointment')
-                    ->options(function (callable $get){
-
+                    ->options(function (){
                         $messageService = app(MessageService::class);
                         $appointments = $messageService->getCompletedAppointments();
-
-                        $appointments->mapWithKeys(function ($appointment) {
-                                return [
-                                    $appointment->id => "{$appointment->patient->user->name} with Dr. {$appointment->doctor->user->name} on {$appointment->appointment_date}",
-                                ];
-                            });
-                            
+                        return $messageService->formatAppointmentsForDoctorMessage($appointments);
                         }
                     )
                     ->searchable()
                     ->required()
                     ->placeholder('Select a completed appointment')
-                    ->visible(fn() => !request()->query('appointment_id')),
+                    ->hidden(fn() => request()->query('appointment_id')),
 
                 Forms\Components\Hidden::make('appointment_id')
                     ->default(fn() => request()->query('appointment_id'))
-                    ->visible(fn() => request()->query('appointment_id')),
+                    ->hidden(fn() => !request()->query('appointment_id')),
 
                 Forms\Components\Textarea::make('doctor_message')
                     ->label("Doctor's Message")

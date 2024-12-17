@@ -117,7 +117,6 @@ class AppointmentResource extends Resource
                     ])->columns(2)
                     ->hidden(fn($get) => !$get('record') || !$get('record.id')),
             ]);
-        // RestoreAction::make()->successRedirectUrl(route('posts.list'));
     }
 
     public static function table(Table $table): Table
@@ -179,54 +178,34 @@ class AppointmentResource extends Resource
                 return $query->whereRaw('1 = 0');
             })
             ->filters([
+                Filter::make('appointment_date')
+                    ->label('Appointment Date')
+                    ->form([
+                        DatePicker::make('appointment_date')
+                    ])->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                $data['appointment_date'],
+                                fn(Builder $query, $date): Builder => $query->whereDate('appointment_date', '=', $date),
+                            );
+                    })
+                    ->indicateUsing(function (array $data): ?string {
+                        if (! isset($data['date']) || ! $data['date']) {
+                            return null;
+                        }
 
-                // Filter::make('appointment_date')
-                // ->label('Appointment Date')
-                // ->form([
-                //     DatePicker::make('date')
-                //         ->placeholder('Select Appointment Date')
-                //         ->label('Select Appointment Date'),
-                // ])
-                // ->query(function (Builder $query, array $data) {
-                //     if ($data['date']) {
-                //         // Filter the records based on the selected appointment date
-                //         $query->whereDate('appointment_date', Carbon::parse($data['date'])->toDateString());
-                //     }
-                // })
-                // ->indicateUsing(function (array $data): ?string {
-                //     if (! isset($data['date']) || ! $data['date']) {
-                //         return null;
-                //     }
+                        // Display the selected date in a user-friendly format
+                        return 'Appointment on ' . Carbon::parse($data['date'])->toFormattedDateString();
+                    }),
 
-                //     // Display the selected date in a user-friendly format
-                //     return 'Appointment on ' . Carbon::parse($data['date'])->toFormattedDateString();
-                // }),
-
-                // SelectFilter::make('day')
-                //     ->options([
-                //         'Sunday' => 'Sunday',
-                //         'Monday' => 'Monday',
-                //         'Tuesday' => 'Tuesday',
-                //         'Wednesday' => 'Wednesday',
-                //         'Thursday' => 'Thursday',
-                //         'Friday' => 'Friday',
-                //         'Saturday' => 'Saturday',
-                //     ])
-                //     ->label('Day')
-                //     ->placeholder('All Days'),
-
-                // SelectFilter::make('doctor_id')
-                //     ->options(function () {
-                //         return Doctor::all()->pluck('user.name', 'id')->toArray();
-                //     })
-                //     ->label('Doctor')
-                //     ->placeholder('Select Doctor'),
-
-
-
+                SelectFilter::make('status')
+                    ->options([
+                        'pending' => 'Pending',
+                        'booked' => 'Booked',
+                        'completed' => 'Completed',
+                        'missed' => 'Missed',
+                    ]),
             ])
-
-
 
             ->actions([
                 Tables\Actions\ViewAction::make(),
@@ -328,20 +307,20 @@ class AppointmentResource extends Resource
         return $infolist
             ->schema([
                 Section::make('Basic Appointment Information')
-                ->schema([
-                    TextEntry::make('patient.user.name')->label('Patient Name'),
-                    TextEntry::make('doctor.user.name')->label('Doctor Name'),
-                    TextEntry::make('appointment_date')->label('Appointment Date'),
-                    TextEntry::make('start_time')->label('Appointment Slot Time'),
-                    TextEntry::make('status')->label('Appointment Status'),
-                    // TextEntry::make('doctors_count')->label('Number of doctors for this specialization')
-                ])->columns(2),
+                    ->schema([
+                        TextEntry::make('patient.user.name')->label('Patient Name'),
+                        TextEntry::make('doctor.user.name')->label('Doctor Name'),
+                        TextEntry::make('appointment_date')->label('Appointment Date'),
+                        TextEntry::make('start_time')->label('Appointment Slot Time'),
+                        TextEntry::make('status')->label('Appointment Status'),
+                        // TextEntry::make('doctors_count')->label('Number of doctors for this specialization')
+                    ])->columns(2),
                 Section::make('Payment Information')
-                ->schema([
-                    TextEntry::make('payment.status')->label('Payment Status'),
-                    TextEntry::make('payment.payment_method')->label('Payment Method'),
-                    // TextEntry::make('doctors_count')->label('Number of doctors for this specialization')
-                ])->columns(2)
+                    ->schema([
+                        TextEntry::make('payment.status')->label('Payment Status'),
+                        TextEntry::make('payment.payment_method')->label('Payment Method'),
+                        // TextEntry::make('doctors_count')->label('Number of doctors for this specialization')
+                    ])->columns(2)
 
 
             ]);
