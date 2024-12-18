@@ -88,17 +88,8 @@ class PaymentResource extends Resource
                 //
             ])
 
+ //->url(fn ($record) => route('filament.admin.resources.payments.stripe', ['appointmentId' => $record->id]))
 
-
-            //         Action::make('Pay via Stripe')
-            //             ->url(fn ($record) => route('filament.admin.resources.payments.stripe', ['appointmentId' => $record->id]))
-            //             ->icon('heroicon-o-currency-dollar')
-            //             ->visible(fn ($record) => $record->payment_status !== 'paid')
-            //             // ->button()
-            //             ->color('secondary')
-            //             ->label('Pay via Stripe')
-            //             ->tooltip('Click to pay via Stripe')
-            //         ])
 
 
             ->actions([
@@ -144,8 +135,9 @@ class PaymentResource extends Resource
                     ->label('Make Payment')
                     ->icon('heroicon-m-credit-card')
                     ->size(ActionSize::Small)
-                    ->color('purple')
-                    ->button(),
+                    ->color('primary')
+                    ->button()
+                    ,
                 Tables\Actions\ViewAction::make(),
                 // Tables\Actions\EditAction::make(),
             ])
