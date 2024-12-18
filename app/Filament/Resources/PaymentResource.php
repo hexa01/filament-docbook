@@ -30,6 +30,7 @@ class PaymentResource extends Resource
 
     public static function form(Form $form): Form
     {
+        abort(404);
         return $form
             ->schema([
                 Forms\Components\TextInput::make('appointment_id')
@@ -142,22 +143,13 @@ class PaymentResource extends Resource
 
                             // return redirect()->route('payment.esewa', ['appointmentId' => $record->appointment_id]);
                         })
+
                         ->icon('heroicon-o-currency-dollar')
                         ->color('success')
                         ->label('Pay via eSewa')
                         ->tooltip('Click to pay via eSewa'),
                     Action::make('Pay with Stripe')
-                        ->action(function ($record) {
-                            // Update payment status to 'paid'
-                            $record->status = 'paid';
-                            $record->payment_method = 'stripe';
-                            $record->save(); // Save the updated record
-                            $appointment =  $record->appointment;
-                            $appointment->status = 'booked';
-                            $appointment->save();
-                            return redirect()->route('filament.admin.resources.payments.index');
-                            // return redirect()->route('payment.esewa', ['appointmentId' => $record->appointment_id]);
-                        })
+                        ->url(fn ($record) => route('stripe.checkout', ['payment' => $record]))
                         ->icon('heroicon-o-currency-dollar')
                         // ->button()
                         ->color('secondary')
@@ -170,10 +162,7 @@ class PaymentResource extends Resource
                     ->icon('heroicon-m-credit-card')
                     ->size(ActionSize::Small)
                     ->color('primary')
-                    ->button()
-                    ,
-                Tables\Actions\ViewAction::make(),
-                // Tables\Actions\EditAction::make(),
+                    ->button(),
             ])
             // ->bulkActions([
             //     Tables\Actions\BulkActionGroup::make([

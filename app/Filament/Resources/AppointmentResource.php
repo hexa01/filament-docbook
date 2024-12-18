@@ -29,6 +29,7 @@ use Filament\Support\Enums\ActionSize;
 use Filament\Tables;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\ActionGroup;
+use Filament\Tables\Actions\BulkAction;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -128,12 +129,12 @@ class AppointmentResource extends Resource
                     ->searchable()
                     ->label("Patient's Name")
                     ->sortable()
-                    ->hidden(fn () => $user->role === 'patient'),
+                    ->hidden(fn() => $user->role === 'patient'),
                 Tables\Columns\TextColumn::make('doctor.user.name')
                     ->searchable()
                     ->label("Doctor's Name")
                     ->sortable()
-                    ->hidden(fn () => $user->role === 'doctor'),
+                    ->hidden(fn() => $user->role === 'doctor'),
                 Tables\Columns\TextColumn::make('appointment_date')
                     ->date()
                     ->sortable(),
@@ -236,67 +237,75 @@ class AppointmentResource extends Resource
                 //         ->url(fn($record) => route('filament.admin.resources.reviews.view', ['record' => $record->review])),
                 ActionGroup::make([
                     Action::make('markCompleted')
-                    ->label('Mark as Completed')
-                    ->color('success')
-                    ->icon('heroicon-s-check-circle')
-                    ->action(function ($record) {
-                        $record->update(['status' => 'completed']);
-                        $text = app(AppointmentService::class)->formatAppointmentAsReadableText($record);
-                        Notification::make()
-                            ->title('Appointment Completed')
-                            ->success()
-                            ->body("$text has been marked as completed.")
-                            ->send();
-                    }),
-
-                Action::make('markMissed')
-                    ->label('Mark as Missed')
-                    ->color('danger')
-                    ->icon('heroicon-s-x-circle')
-                    ->action(function ($record) {
-                        $record->update(['status' => 'missed']);
-                        $text = app(AppointmentService::class)->formatAppointmentAsReadableText($record);
-                        Notification::make()
-                            ->title('Appointment Marked as Missed')
-                            ->success()
-                            ->body("$text has been marked as missed.")
-                            ->send();
-                    }),
+                        ->label('Mark as Completed')
+                        ->color('success')
+                        ->icon('heroicon-s-check-circle')
+                        ->action(function ($record) {
+                            $record->update(['status' => 'completed']);
+                            $text = app(AppointmentService::class)->formatAppointmentAsReadableText($record);
+                            Notification::make()
+                                ->title('Appointment Completed')
+                                ->success()
+                                ->body("$text has been marked as completed.")
+                                ->send();
+                        }),
+                    Action::make('markMissed')
+                        ->label('Mark as Missed')
+                        ->color('danger')
+                        ->icon('heroicon-s-x-circle')
+                        ->action(function ($record) {
+                            $record->update(['status' => 'missed']);
+                            $text = app(AppointmentService::class)->formatAppointmentAsReadableText($record);
+                            Notification::make()
+                                ->title('Appointment Marked as Missed')
+                                ->success()
+                                ->body("$text has been marked as missed.")
+                                ->send();
+                        }),
                     Tables\Actions\EditAction::make()
-                    ->label('Edit Others'),
+                        ->label('Edit Others'),
                 ])
                     ->tooltip('More Actions')
                     ->label('More Actions')
                     ->icon('heroicon-s-cog')
                     ->size(ActionSize::ExtraLarge)
                     ->color('primary')
-                    // ->button()
+                // ->button()
             ])
             ->bulkActions([
-                // Bulk Action for updating the status of selected records
-                // BulkAction::make('updateStatusBulk')
-                //     ->label('Update Status for Selected')
-                //     ->form([
-                //         Select::make('status')
-                //             ->label('Select Status')
-                //             ->options([
-                //                 'completed' => 'Completed',
-                //                 'missed' => 'Missed',
-                //             ])
-                //             ->required(),
-                //     ])->action(function ($records, $data) {
-                //         // Update the status for selected records
-                //         foreach ($records as $record) {
-                //             $record->update([
-                //                 'status' => $data['status'],
-                //             ]);
-                //         }
+                BulkAction::make('markCompleted')
+                    ->label('Mark as Completed')
+                    ->color('success')
+                    ->icon('heroicon-s-check-circle')
+                    ->action(function (array $records) {
+                        foreach ($records as $record) {
+                            // Update each record to "completed"
+                            $record->update(['status' => 'completed']);
+                        }
+                        Notification::make()
+                            ->title('Appointments Status Updated')
+                            ->success()
+                            ->body("Selected Appointments have been marked as completed.")
+                            ->send();
+                    }),
+                BulkAction::make('markMissed')
+                    ->label('Mark as Missed')
+                    ->color('danger')
+                    ->icon('heroicon-s-x-circle')
+                    ->action(function (array $records) {
+                        foreach ($records as $record) {
+                            // Update each record to "missed"
+                            $record->update(['status' => 'missed']);
+                        }
 
-                //         Notification::make()
-                //             ->title('Status Updated')
-                //             ->success()
-                //             ->send();
-                //     }),
+                        // Send notification after updating statuses
+                        Notification::make()
+                            ->title('Appointments Status Updated')
+                            ->success()
+                            ->body("Selected Appointments have been marked as missed.")
+                            ->send();
+                    }),
+
             ]);
     }
 

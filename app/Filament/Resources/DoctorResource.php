@@ -20,10 +20,15 @@ class DoctorResource extends Resource
 {
     protected static ?string $model = Doctor::class;
     protected static ?string $navigationLabel = 'Doctor';
-
     protected static ?string $navigationIcon = 'heroicon-o-user';
-    protected static ?string $navigationGroup = 'User Management';
-    protected static ?int $navigationSort = 2;
+    // protected static ?string $navigationGroup = 'Doctor Management';
+    protected static ?int $navigationSort = 1;
+
+
+    public static function shouldRegisterNavigation(): bool
+{
+    return false; // Hides the resource from the sidebar
+}
 
     public static function form(Form $form): Form
     {

@@ -9,12 +9,15 @@ use App\Models\Message;
 use App\Models\User;
 use App\Services\AppointmentService;
 use App\Services\MessageService;
-use Filament\Actions\Action;
+
 use Filament\Facades\Filament;
 use Filament\Forms;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Actions\Action as Action;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -123,7 +126,25 @@ class MessageResource extends Resource
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
+                Action::make('updateMessage')
+                ->label("Edit")
+                ->form([
+                    TextInput::make('doctor_message')
+                        ->label("Doctor's Message")
+                        ->required()
+                ])
+                ->color('yellow')
+                ->icon('heroicon-s-pencil')
+                ->action(function ($record, $data) {
+                    $record->update([
+                        'doctor_message' => $data['doctor_message'],
+                    ]);
+                    // $text = app(AppointmentService::class)->formatAppointmentAsReadableText($record);
+                    Notification::make()
+                        ->title('Message updated')
+                        ->success()
+                        ->send();
+                }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

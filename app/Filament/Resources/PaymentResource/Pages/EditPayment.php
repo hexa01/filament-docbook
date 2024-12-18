@@ -17,4 +17,9 @@ class EditPayment extends EditRecord
             Actions\DeleteAction::make(),
         ];
     }
+
+    public static function canEdit(): bool
+    {
+        return false; // Prevents users from accessing the edit page
+    }
 }

@@ -7,12 +7,15 @@ use App\Filament\Resources\SpecializationResource\RelationManagers;
 use App\Filament\Resources\SpecializationResource\RelationManagers\DoctorsRelationManager;
 use App\Models\Specialization;
 use Filament\Forms;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Infolists\Components\Section;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Infolist;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Actions\Action as Action;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -24,6 +27,7 @@ class SpecializationResource extends Resource
     protected static ?string $navigationLabel = 'Specialization';
     protected static ?string $navigationGroup = 'Specialization Management';
     protected static ?string $navigationIcon = 'heroicon-o-building-office';
+    protected static ?int $navigationSort = 3;
 
     public static function form(Form $form): Form
     {
@@ -43,7 +47,7 @@ class SpecializationResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->searchable(),
-                    Tables\Columns\TextColumn::make('doctors_count')->counts('doctors')
+                Tables\Columns\TextColumn::make('doctors_count')->counts('doctors')
                     ->label('Number of Doctors')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
@@ -60,8 +64,27 @@ class SpecializationResource extends Resource
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
-            ])
+                Action::make('updateName')
+                    ->label("Edit")
+                    ->form([
+                        TextInput::make('name')
+                            ->label('Name')
+                            ->required()
+                    ])
+                    ->color('yellow')
+                    ->icon('heroicon-s-pencil')
+                    ->action(function ($record, $data) {
+                        $record->update([
+                            'name' => $data['name'],
+                        ]);
+                        // $text = app(AppointmentService::class)->formatAppointmentAsReadableText($record);
+                        Notification::make()
+                            ->title('Specialization updated')
+                            ->success()
+                            ->body("Specialization name updated to $record->name")
+                            ->send();
+                    }),
+                ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     // Tables\Actions\DeleteBulkAction::make(),
@@ -74,11 +97,13 @@ class SpecializationResource extends Resource
         return $infolist
             ->schema([
                 Section::make('Specialization Information')
-                ->description('Information about the specialization')
-                ->schema([
-                    TextEntry::make('name')->label('Specialization name'),
-                    TextEntry::make('doctors_count')->label('Number of doctors for this specialization')
-                ])->columns(2)
+                    ->description('Information about the specialization')
+                    ->schema([
+                        TextEntry::make('name')->label('Specialization name'),
+                        TextEntry::make('doctors')
+                            ->formatStateUsing(fn($record) => $record->doctors()->count())
+                            ->label('Number of doctors for this specialization')
+                    ])->columns(2)
 
 
             ]);

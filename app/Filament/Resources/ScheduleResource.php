@@ -27,21 +27,52 @@ class ScheduleResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
+    protected static ?string $navigationLabel = 'Schedules';
+    protected static ?string $navigationGroup = 'Schedules Management';
+    protected static ?int $navigationSort = 2;
+
+    public static function resolveRecord($id)
+    {
+        return Schedule::with('doctor.user')->find($id);
+    }
+
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('doctor_id')
-                    ->required()
-                    ->numeric(),
+                // Forms\Components\Hidden::make('doctor_id')
+                //     ->default(fn($get) => $get('record')->doctor_id)
+                //     ->required(),
+
+                // Forms\Components\TextInput::make('doctor.user.name')
+                //     ->label('Doctor Name')
+                //     ->default('Doctor')
+                //     // ->default(fn($get) => $get('record')->doctor->user->name)
+                //     ->disabled()
+                //     ->readonly(),
                 Forms\Components\TextInput::make('day')
+                    ->label('Day')
+                    ->default(fn($get) => $get('record')->day)
+                    ->required()
+                    ->disabled()
+                    ->readonly(),
+                Forms\Components\TimePicker::make('start_time')
+                    ->label('Select Start Time')
+                    ->displayFormat('H:i')
                     ->required(),
-                Forms\Components\TextInput::make('start_time')
-                    ->required(),
-                Forms\Components\TextInput::make('end_time')
-                    ->required(),
-                Forms\Components\TextInput::make('slots')
-                    ->numeric(),
+                Forms\Components\TimePicker::make('end_time')
+                    ->label('Select End Time')
+                    ->required()
+                    ->after('start_time')
+                    ->rule('after:start_time')
+                    ->rule(function (callable $get) {
+                        return function ($attribute, $value, $fail) use ($get) {
+                            $startTime = $get('start_time');
+                            if (strtotime($value) < strtotime('+2 hours', strtotime($startTime))) {
+                                $fail('End time must be at least 2 hours after the start time.');
+                            }
+                        };
+                    }),
             ]);
     }
 
@@ -49,8 +80,9 @@ class ScheduleResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('doctor_id')
-                    ->numeric()
+                Tables\Columns\TextColumn::make('doctor.user.name')
+                    ->label('Doctor Name')
+                    ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('day')
                     ->searchable(),
@@ -103,28 +135,28 @@ class ScheduleResource extends Resource
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([
- // Bulk Action for updating the status of selected records
+                // Bulk Action for updating the status of selected records
                 BulkAction::make('updateScheduleBulk')
-                ->label('Update Schedules for Selected Days')
-                ->form([
-                    Forms\Components\TimePicker::make('start_time')
-                        ->label('Select Start Time')
-                        ->displayFormat('H:i')
-                        ->required(),
+                    ->label('Update Schedules for Selected Days')
+                    ->form([
+                        Forms\Components\TimePicker::make('start_time')
+                            ->label('Select Start Time')
+                            ->displayFormat('H:i')
+                            ->required(),
 
-                    Forms\Components\TimePicker::make('end_time')
-                        ->label('Select End Time')
-                        ->required()
-                        ->after('start_time')
-                        ->rule('after:start_time')
-                        ->rule(function (callable $get) {
-                            return function ($attribute, $value, $fail) use ($get) {
-                                $startTime = $get('start_time');
-                                if (strtotime($value) < strtotime('+2 hours', strtotime($startTime))) {
-                                    $fail('End time must be at least 2 hours after the start time.');
-                                }
-                            };
-                        }),
+                        Forms\Components\TimePicker::make('end_time')
+                            ->label('Select End Time')
+                            ->required()
+                            ->after('start_time')
+                            ->rule('after:start_time')
+                            ->rule(function (callable $get) {
+                                return function ($attribute, $value, $fail) use ($get) {
+                                    $startTime = $get('start_time');
+                                    if (strtotime($value) < strtotime('+2 hours', strtotime($startTime))) {
+                                        $fail('End time must be at least 2 hours after the start time.');
+                                    }
+                                };
+                            }),
                     ])->action(function ($records, $data) {
                         // Update the status for selected records
                         foreach ($records as $record) {
@@ -133,14 +165,12 @@ class ScheduleResource extends Resource
 
                             // Calculate the number of 30-minute slots
                             $slots = $startTime->diffInMinutes($endTime) / 30;
-
                             $record->update([
                                 'start_time' => $startTime->format('H:i'),  // 24-hour format
                                 'end_time' => $endTime->format('H:i'),      // 24-hour format
                                 'slots' => $slots,
                             ]);
                         }
-
                         Notification::make()
                             ->title('Selected Schedules Updated')
                             ->success()
