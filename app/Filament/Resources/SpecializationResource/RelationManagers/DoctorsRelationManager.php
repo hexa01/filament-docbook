@@ -31,6 +31,10 @@ class DoctorsRelationManager extends RelationManager
             ->columns([
                 Tables\Columns\TextColumn::make('user.name')
                 ->label("Doctor's Name"),
+                Tables\Columns\TextColumn::make('user.email')
+                ->label("Email"),
+                Tables\Columns\TextColumn::make('user.phone')
+                ->label("Phone"),
             ])
             ->filters([
                 //

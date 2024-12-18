@@ -121,16 +121,19 @@ class AppointmentResource extends Resource
 
     public static function table(Table $table): Table
     {
+        $user = User::find(Filament::auth()->user()->id);
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('patient.user.name')
                     ->searchable()
                     ->label("Patient's Name")
-                    ->sortable(),
+                    ->sortable()
+                    ->hidden(fn () => $user->role === 'patient'),
                 Tables\Columns\TextColumn::make('doctor.user.name')
                     ->searchable()
                     ->label("Doctor's Name")
-                    ->sortable(),
+                    ->sortable()
+                    ->hidden(fn () => $user->role === 'doctor'),
                 Tables\Columns\TextColumn::make('appointment_date')
                     ->date()
                     ->sortable(),
@@ -209,7 +212,6 @@ class AppointmentResource extends Resource
 
             ->actions([
                 Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make()
                     ->successNotification(function ($record) {
                         return Notification::make()
@@ -233,7 +235,6 @@ class AppointmentResource extends Resource
                 //         ->visible(fn($record) => $record->review)
                 //         ->url(fn($record) => route('filament.admin.resources.reviews.view', ['record' => $record->review])),
                 ActionGroup::make([
-                    // Tables\Actions\ViewAction::make(),
                     Action::make('markCompleted')
                     ->label('Mark as Completed')
                     ->color('success')
@@ -261,26 +262,8 @@ class AppointmentResource extends Resource
                             ->body("$text has been marked as missed.")
                             ->send();
                     }),
-                    Action::make('updateStatus')
-                        ->label('Update Status')
-                        ->color('primary')
-                        ->icon('heroicon-s-pencil')
-                        ->form([
-                            Select::make('status')
-                                ->label('Select New Status')
-                                ->options(fn() => app(AppointmentService::class)->optionsForStatusUpdate())
-                                ->placeholder('Choose a status...')
-                                ->required(),
-                        ])
-                        ->action(function ($record, $data) {
-                            $record->update(['status' => $data['status']]);
-
-                            Notification::make()
-                                ->title('Status Successfully Updated')
-                                ->success()
-                                ->body('The appointment status has been updated to ' . ucfirst($data['status']) . '.')
-                                ->send();
-                        }),
+                    Tables\Actions\EditAction::make()
+                    ->label('Edit Others'),
                 ])
                     ->tooltip('More Actions')
                     ->label('More Actions')

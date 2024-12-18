@@ -64,7 +64,7 @@ class SpecializationResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    // Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
     }
@@ -96,6 +96,7 @@ class SpecializationResource extends Resource
         return [
             'index' => Pages\ListSpecializations::route('/'),
             'create' => Pages\CreateSpecialization::route('/create'),
+            'view' => Pages\ViewSpecialization::route('/{record}'),
             'edit' => Pages\EditSpecialization::route('/{record}/edit'),
         ];
     }

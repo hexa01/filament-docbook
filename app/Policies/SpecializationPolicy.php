@@ -21,7 +21,7 @@ class SpecializationPolicy
      */
     public function view(User $user, Specialization $specialization): bool
     {
-        return $user->hasRole('admin');
+        return $user->hasRole('admin') || $user->hasRole('doctor') || $user->hasRole('patient');
     }
 
     /**

@@ -6,6 +6,8 @@ use App\Filament\Resources\PaymentResource\Pages;
 use App\Filament\Resources\PaymentResource\RelationManagers;
 use App\Models\Appointment;
 use App\Models\Payment;
+use App\Models\User;
+use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -44,14 +46,17 @@ class PaymentResource extends Resource
 
     public static function table(Table $table): Table
     {
+        $user = User::find(Filament::auth()->user()->id);
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('appointment.patient.user.name')
                     ->label('Patient Name')
-                    ->sortable(),
+                    ->sortable()
+                    ->hidden(fn () => $user->role === 'patient'),
                 Tables\Columns\TextColumn::make('appointment.doctor.user.name')
                     ->label('Doctor Name')
-                    ->sortable(),
+                    ->sortable()
+                    ->hidden(fn () => $user->role === 'doctor'),
                 Tables\Columns\TextColumn::make('appointment.appointment_date')
                     ->label('Appointment Date')
                     ->sortable(),
@@ -84,6 +89,35 @@ class PaymentResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->modifyQueryUsing(function (Builder $query) {
+                // Get the currently authenticated user
+                $user = User::find(Filament::auth()->user()->id);
+
+                // If the user is an admin, they can see all payments
+                if ($user->hasRole('admin')) {
+                    return $query;
+                }
+
+                // If the user is a doctor, only their appointment payments are shown
+                if ($user->hasRole('doctor')) {
+                    $appointments = Appointment::where('doctor_id',$user->doctor->id)->get();
+                    if ($appointments->isNotEmpty()) {
+                        $appointmentIds = $appointments->pluck('id');
+                    return $query->whereIn('appointment_id', $appointmentIds);
+                }
+            }
+
+                // If the user is a patient, only their appointment payments are shown
+                if ($user->hasRole('patient')) {
+                    $appointments = Appointment::where('patient_id',$user->patient->id)->get();
+                    if ($appointments->isNotEmpty()) {
+                        $appointmentIds = $appointments->pluck('id');
+                    return $query->whereIn('appointment_id', $appointmentIds);
+                }
+                }
+                //default
+                return $query->whereRaw('1 = 0');
+            })
             ->filters([
                 //
             ])
@@ -109,7 +143,6 @@ class PaymentResource extends Resource
                             // return redirect()->route('payment.esewa', ['appointmentId' => $record->appointment_id]);
                         })
                         ->icon('heroicon-o-currency-dollar')
-                        ->visible(fn($record) => $record->status !== 'paid')
                         ->color('success')
                         ->label('Pay via eSewa')
                         ->tooltip('Click to pay via eSewa'),
@@ -126,12 +159,13 @@ class PaymentResource extends Resource
                             // return redirect()->route('payment.esewa', ['appointmentId' => $record->appointment_id]);
                         })
                         ->icon('heroicon-o-currency-dollar')
-                        ->visible(fn($record) => $record->status !== 'paid')
                         // ->button()
                         ->color('secondary')
                         ->label('Pay via Stripe')
                         ->tooltip('Click to pay via Stripe')
                 ])
+                ->visible(fn($record) => $record->status !== 'paid')
+                ->hidden(fn () => $user->role === 'doctor')
                     ->label('Make Payment')
                     ->icon('heroicon-m-credit-card')
                     ->size(ActionSize::Small)
