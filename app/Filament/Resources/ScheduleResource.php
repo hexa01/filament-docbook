@@ -11,10 +11,12 @@ use Closure;
 use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\BulkAction;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -132,7 +134,55 @@ class ScheduleResource extends Resource
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
+                Action::make('updateName')
+                ->label("Edit")
+                ->form([
+                    Forms\Components\TextInput::make('day')
+                    ->label('Day')
+                    ->default(fn($record) => $record->day)
+                    ->required()
+                    ->disabled()
+                    ->readonly(),
+                    Forms\Components\TimePicker::make('start_time')
+                        ->label('Select Start Time')
+                        ->displayFormat('H:i')
+                        ->default(fn($record) => $record->start_time)
+                        ->required(),
+                    Forms\Components\TimePicker::make('end_time')
+                        ->label('Select End Time')
+                        ->required()
+                        ->default(fn($record) => $record->end_time)
+                        ->after('start_time')
+                        ->rule('after:start_time')
+                        ->rule(function (callable $get) {
+                            return function ($attribute, $value, $fail) use ($get) {
+                                $startTime = $get('start_time');
+                                if (strtotime($value) < strtotime('+2 hours', strtotime($startTime))) {
+                                    $fail('End time must be at least 2 hours after the start time.');
+                                }
+                            };
+                        }),
+                ])
+                ->color('yellow')
+                ->icon('heroicon-s-pencil')
+                ->action(function ($record, $data) {
+                    $startTime = Carbon::parse($data['start_time']);
+                    $endTime = Carbon::parse($data['end_time']);
+                    // Calculate the number of 30-minute slots
+                    $slots = $startTime->diffInMinutes($endTime) / 30;
+                    $record->update([
+                        'start_time' => $startTime->format('H:i'),  // 24-hour format
+                        'end_time' => $endTime->format('H:i'),      // 24-hour format
+                        'slots' => $slots,
+                    ]);
+
+                    // $text = app(AppointmentService::class)->formatAppointmentAsReadableText($record);
+                    Notification::make()
+                        ->title('Schedule updated')
+                        ->success()
+                        ->body("Schedule updated for $record->day")
+                        ->send();
+                })
             ])
             ->bulkActions([
                 // Bulk Action for updating the status of selected records
