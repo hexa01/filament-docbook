@@ -21,6 +21,7 @@ use Filament\Tables\Actions\BulkAction;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 use phpDocumentor\Reflection\Types\Callable_;
 
 class ScheduleResource extends Resource
@@ -80,12 +81,14 @@ class ScheduleResource extends Resource
 
     public static function table(Table $table): Table
     {
+        $user = User::find(Filament::auth()->user()->id);
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('doctor.user.name')
                     ->label('Doctor Name')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->hidden(fn()=> Auth::user()->role === 'doctor'),
                 Tables\Columns\TextColumn::make('day')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('start_time'),

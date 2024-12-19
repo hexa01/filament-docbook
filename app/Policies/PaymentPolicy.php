@@ -13,7 +13,7 @@ class PaymentPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->hasRole('admin') || $user->hasRole('doctor') || $user->hasRole('patient');
+        return $user->hasRole('admin') || $user->hasRole('patient');
     }
 
     /**

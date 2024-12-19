@@ -67,6 +67,9 @@ class AppointmentService
     if ($user->hasRole('doctor')) {
         $labeledText = "Appointment with {$appointment->patient->user->name} on {$appointment->appointment_date} at {$appointment->start_time}";
     }
+    if ($user->hasRole('patient')) {
+        $labeledText = "Appointment with {$appointment->doctor->user->name} on {$appointment->appointment_date} at {$appointment->start_time}";
+    }
 
     if ($user->hasRole('admin')) {
         $labeledText = "Appointment of {$appointment->patient->user->name} with Dr. {$appointment->doctor->user->name} on {$appointment->appointment_date} at {$appointment->start_time}";

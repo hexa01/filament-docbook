@@ -4,9 +4,11 @@ namespace App\Filament\Resources\AppointmentResource\Pages;
 
 use App\Filament\Resources\AppointmentResource;
 use App\Models\Payment;
+use App\Services\AppointmentService;
 use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
+use Illuminate\Support\Facades\Auth;
 
 class CreateAppointment extends CreateRecord
 {
@@ -17,16 +19,22 @@ class CreateAppointment extends CreateRecord
         return $this->getResource()::getUrl('index');
     }
 
-    // protected function getCreatedNotification(): Notification
-    // {
-    //     $record = $this->record;
+    protected function getCreatedNotification(): Notification
+    {
+        $record = $this->record;
+        $text = app(AppointmentService::class)->formatAppointmentAsReadableText($record);
+        return Notification::make()
+            ->success()
+            ->icon('heroicon-o-calendar')
+            ->title('Appointment Booked!')
+            ->body("$text has been successfully booked.");
+    }
 
-    //     return Notification::make()
-    //         ->success()
-    //         ->icon('heroicon-o-calendar')
-    //         ->title('Appointment Booked!')
-    //         ->body("Your appointment with Dr. {$record->doctor->user->name} for {$record->appointment_date} has been successfully booked.");
-    // }
+    protected function mutateFormDataBeforeCreate(array $data): array
+    {
+        $data['patient_id'] = Auth::user()->patient->id;
+        return $data;
+    }
 
     protected function afterCreate(): void
     {

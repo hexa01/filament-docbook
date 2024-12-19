@@ -16,4 +16,5 @@ class ListSpecializations extends ListRecords
             Actions\CreateAction::make(),
         ];
     }
+
 }

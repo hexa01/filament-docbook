@@ -53,11 +53,11 @@ class PaymentResource extends Resource
                 Tables\Columns\TextColumn::make('appointment.patient.user.name')
                     ->label('Patient Name')
                     ->sortable()
-                    ->hidden(fn () => $user->role === 'patient'),
+                    ->hidden(fn() => $user->role === 'patient'),
                 Tables\Columns\TextColumn::make('appointment.doctor.user.name')
                     ->label('Doctor Name')
                     ->sortable()
-                    ->hidden(fn () => $user->role === 'doctor'),
+                    ->hidden(fn() => $user->role === 'doctor'),
                 Tables\Columns\TextColumn::make('appointment.appointment_date')
                     ->label('Appointment Date')
                     ->sortable(),
@@ -71,6 +71,7 @@ class PaymentResource extends Resource
                     ->color(fn(string $state): string => match ($state) {
                         'paid' => 'success',
                         'unpaid' => 'danger',
+                        default => 'secondary'
                     }),
                 Tables\Columns\TextColumn::make('transaction_id')
                     ->toggleable(isToggledHiddenByDefault: true)
@@ -89,7 +90,8 @@ class PaymentResource extends Resource
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-            ])
+            ])->defaultSort('status', 'desc')
+            ->defaultSort('appointment.appointment_date', 'desc')
             ->modifyQueryUsing(function (Builder $query) {
                 // Get the currently authenticated user
                 $user = User::find(Filament::auth()->user()->id);
@@ -101,20 +103,20 @@ class PaymentResource extends Resource
 
                 // If the user is a doctor, only their appointment payments are shown
                 if ($user->hasRole('doctor')) {
-                    $appointments = Appointment::where('doctor_id',$user->doctor->id)->get();
+                    $appointments = Appointment::where('doctor_id', $user->doctor->id)->get();
                     if ($appointments->isNotEmpty()) {
                         $appointmentIds = $appointments->pluck('id');
-                    return $query->whereIn('appointment_id', $appointmentIds);
+                        return $query->whereIn('appointment_id', $appointmentIds);
+                    }
                 }
-            }
 
                 // If the user is a patient, only their appointment payments are shown
                 if ($user->hasRole('patient')) {
-                    $appointments = Appointment::where('patient_id',$user->patient->id)->get();
+                    $appointments = Appointment::where('patient_id', $user->patient->id)->get();
                     if ($appointments->isNotEmpty()) {
                         $appointmentIds = $appointments->pluck('id');
-                    return $query->whereIn('appointment_id', $appointmentIds);
-                }
+                        return $query->whereIn('appointment_id', $appointmentIds);
+                    }
                 }
                 //default
                 return $query->whereRaw('1 = 0');
@@ -123,7 +125,7 @@ class PaymentResource extends Resource
                 //
             ])
 
- //->url(fn ($record) => route('filament.admin.resources.payments.stripe', ['appointmentId' => $record->id]))
+            //->url(fn ($record) => route('filament.admin.resources.payments.stripe', ['appointmentId' => $record->id]))
 
 
 
@@ -149,15 +151,15 @@ class PaymentResource extends Resource
                         ->label('Pay via eSewa')
                         ->tooltip('Click to pay via eSewa'),
                     Action::make('Pay with Stripe')
-                        ->url(fn ($record) => route('stripe.checkout', ['payment' => $record]))
+                        ->url(fn($record) => route('stripe.checkout', ['payment' => $record]))
                         ->icon('heroicon-o-currency-dollar')
                         // ->button()
                         ->color('secondary')
                         ->label('Pay via Stripe')
                         ->tooltip('Click to pay via Stripe')
                 ])
-                ->visible(fn($record) => $record->status !== 'paid')
-                ->hidden(fn () => $user->role === 'doctor')
+                    ->visible(fn($record) => $record->status !== 'paid')
+                    ->hidden(fn() => $user->role === 'doctor')
                     ->label('Make Payment')
                     ->icon('heroicon-m-credit-card')
                     ->size(ActionSize::Small)

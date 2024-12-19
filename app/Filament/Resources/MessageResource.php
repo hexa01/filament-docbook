@@ -21,6 +21,7 @@ use Filament\Tables\Actions\Action as Action;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 
 class MessageResource extends Resource
 {
@@ -36,11 +37,12 @@ class MessageResource extends Resource
             ->schema([
                 Forms\Components\Select::make('appointment_id')
                     ->label('Select Completed Appointment')
-                    ->options(function (){
-                        $messageService = app(MessageService::class);
-                        $appointments = $messageService->getCompletedAppointments();
-                        return app(AppointmentService::class)->formatAppointmentsAsReadableText($appointments);
-                        // return $AppointmentService->formatAppointmentsAsReadableText($appointments);
+                    ->options(
+                        function () {
+                            $messageService = app(MessageService::class);
+                            $appointments = $messageService->getCompletedAppointments();
+                            return app(AppointmentService::class)->formatAppointmentsAsReadableText($appointments);
+                            // return $AppointmentService->formatAppointmentsAsReadableText($appointments);
                         }
                     )
                     ->searchable()
@@ -73,6 +75,9 @@ class MessageResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('appointment.doctor.user.name')
+                ->hidden()
+                ->searchable(),
                 Tables\Columns\TextColumn::make('appointment_id')
                     ->label('Appointment Details')
                     ->getStateUsing(fn($record) =>
@@ -80,7 +85,9 @@ class MessageResource extends Resource
                     $record->appointment->patient->user->name . ' with ' .
                         $record->appointment->doctor->user->name . ' on ' .
                         $record->appointment->appointment_date)
-                    ->sortable(),
+                    ->sortable()
+                    ->searchable(),
+
                 Tables\Columns\TextColumn::make('doctor_message')
                     ->label("Doctor's Message"),
                 Tables\Columns\TextColumn::make('created_at')
@@ -103,20 +110,20 @@ class MessageResource extends Resource
 
                 // If the user is a doctor, only their given messages are shown
                 if ($user->hasRole('doctor')) {
-                    $appointments = Appointment::where('doctor_id',$user->doctor->id)->get();
+                    $appointments = Appointment::where('doctor_id', $user->doctor->id)->get();
                     if ($appointments->isNotEmpty()) {
                         $appointmentIds = $appointments->pluck('id');
-                    return $query->whereIn('appointment_id', $appointmentIds);
+                        return $query->whereIn('appointment_id', $appointmentIds);
+                    }
                 }
-            }
 
                 // If the user is a patient, only their received messages are shown
                 if ($user->hasRole('patient')) {
-                    $appointments = Appointment::where('patient_id',$user->patient->id)->get();
+                    $appointments = Appointment::where('patient_id', $user->patient->id)->get();
                     if ($appointments->isNotEmpty()) {
                         $appointmentIds = $appointments->pluck('id');
-                    return $query->whereIn('appointment_id', $appointmentIds);
-                }
+                        return $query->whereIn('appointment_id', $appointmentIds);
+                    }
                 }
                 //default
                 return $query->whereRaw('1 = 0');
@@ -127,24 +134,26 @@ class MessageResource extends Resource
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Action::make('updateMessage')
-                ->label("Edit")
-                ->form([
-                    TextInput::make('doctor_message')
-                        ->label("Doctor's Message")
-                        ->required()
-                ])
-                ->color('yellow')
-                ->icon('heroicon-s-pencil')
-                ->action(function ($record, $data) {
-                    $record->update([
-                        'doctor_message' => $data['doctor_message'],
-                    ]);
-                    // $text = app(AppointmentService::class)->formatAppointmentAsReadableText($record);
-                    Notification::make()
-                        ->title('Message updated')
-                        ->success()
-                        ->send();
-                }),
+                ->hidden(fn()=>Auth::user()->role === 'patient')
+                    ->label("Edit")
+                    ->form([
+                        TextInput::make('doctor_message')
+                            ->default(fn($record) => $record->doctor_message)
+                            ->label("Doctor's Message")
+                            ->required()
+                    ])
+                    ->color('yellow')
+                    ->icon('heroicon-s-pencil')
+                    ->action(function ($record, $data) {
+                        $record->update([
+                            'doctor_message' => $data['doctor_message'],
+                        ]);
+                        // $text = app(AppointmentService::class)->formatAppointmentAsReadableText($record);
+                        Notification::make()
+                            ->title('Message updated')
+                            ->success()
+                            ->send();
+                    }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

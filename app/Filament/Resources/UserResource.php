@@ -40,15 +40,17 @@ class UserResource extends Resource
                 Forms\Components\Select::make('role')
                     ->required()
                     ->label('Role')
+                    ->disabled(fn(callable $get) => $get('id') !== null)
                     ->options([
                         'doctor' => 'Doctor',
                         'patient' => 'Patient',
                         'admin' => 'Admin',
-                    ])->live(),
+                    ])->reactive(),
                 Forms\Components\Select::make('specialization_id')
                     ->label('Specialization')
                     ->options(fn() => Specialization::pluck('name', 'id')->toArray())
                     ->required()
+                    // ->default(fn($record) => $record->specialization_id)
                     ->visible(fn($get) => $get('role') == 'doctor'),
                 Forms\Components\DatePicker::make('dob')
                     ->label('Date of Birth')

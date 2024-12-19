@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Payment;
+use App\Services\AppointmentService;
 use Illuminate\Http\Request;
 use Stripe;
 
@@ -16,18 +17,20 @@ class StripeController extends Controller
 
     public function createCharge(Request $request, Payment $payment)
     {
+        $appointment = $payment->appointment;
+        $text = app(AppointmentService::class)->formatAppointmentAsReadableText($appointment);
         Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
         Stripe\Charge::create([
             "amount" => 5 * 100,
             "currency" => "usd",
             "source" => $request->stripeToken,
-            "description" => "Binaryboxtuts Payment Test"
+            "description" => $text,
         ]);
         $payment->update([
             'status' => 'paid',
             'payment_method' => 'stripe',
         ]);
-        
+
         $appointment =  $payment->appointment;
         $appointment->status = 'booked';
         $appointment->save();

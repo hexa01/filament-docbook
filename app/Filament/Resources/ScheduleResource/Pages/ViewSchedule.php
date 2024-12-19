@@ -16,7 +16,10 @@ class ViewSchedule extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\EditAction::make(),
+            // Actions\EditAction::make(),
+            Actions\Action::make('Index')
+            ->label('View all Schedules')
+            ->url(route('filament.admin.resources.schedules.index')),
         ];
     }
 

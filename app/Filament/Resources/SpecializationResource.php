@@ -19,13 +19,15 @@ use Filament\Tables\Actions\Action as Action;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class SpecializationResource extends Resource
 {
+
     protected static ?string $model = Specialization::class;
     protected static ?string $navigationLabel = 'Specialization';
-    protected static ?string $navigationGroup = 'Specialization Management';
+    protected static ?string $navigationGroup = 'Specializations';
     protected static ?string $navigationIcon = 'heroicon-o-building-office';
     protected static ?int $navigationSort = 3;
 
@@ -71,6 +73,7 @@ class SpecializationResource extends Resource
                             ->label('Name')
                             ->required()
                     ])
+                    ->visible(fn() => Auth::user()->role === 'admin' )
                     ->color('yellow')
                     ->icon('heroicon-s-pencil')
                     ->action(function ($record, $data) {
