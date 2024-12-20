@@ -140,11 +140,11 @@ class ListAppointments extends ListRecords
                                 ->send();
                             $action->cancel();
                         }
-                        if ($record->status === 'pending') {
+                        elseif ($record->status != 'pending') {
                             Notification::make()
                                 ->danger()
                                 ->title('Appointment not deleted')
-                                ->body('You can\'t delete appointment that is already booked.')
+                                ->body("You can't delete appointment that is already $record->status.")
                                 ->send();
                             $action->cancel();
                         }
