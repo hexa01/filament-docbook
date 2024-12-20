@@ -19,6 +19,7 @@ class Stats extends BaseWidget
     {
         $user = User::find(Auth::user()->id);
         $currentDay = Carbon::now()->format('l');
+        $statsToDisplay = [];
         $availableDoctors = Schedule::where('day', $currentDay)
             ->whereTime('start_time', '<=', Carbon::now()->format('H:i'))
             ->whereTime('end_time', '>=', Carbon::now()->format('H:i'))
@@ -26,6 +27,7 @@ class Stats extends BaseWidget
 
         if ($user->role === 'patient') {
             $appointments = Appointment::where('appointment_date', '>=', Carbon::parse(now()))->where('status', 'booked')->where('patient_id', $user->patient->id)->get();
+
         }
         if ($user->role === 'doctor') {
             $appointments = Appointment::where('appointment_date', '>=', Carbon::parse(now()))->where('status', 'booked')->where('doctor_id', $user->doctor->id)->get();
@@ -79,8 +81,6 @@ class Stats extends BaseWidget
             // ->descriptionIcon('heroicon-o-check-circle')
             // ->color('success')
             // ->url(route('filament.admin.resources.schedules.index')),
-
-
 
 
         ];

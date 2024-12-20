@@ -32,8 +32,13 @@ class CreateAppointment extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        $data['patient_id'] = Auth::user()->patient->id;
+        if(Auth::user()->role === 'patient'){
+            $data['patient_id'] = Auth::user()->patient->id;
+            $appointmentService = app(AppointmentService::class);
+            // $availableSlots = $appointmentService->generateAvailableSlots($doctor, $appointment_date);
+        }
         return $data;
+
     }
 
     protected function afterCreate(): void

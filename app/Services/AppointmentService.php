@@ -36,6 +36,10 @@ class AppointmentService
         return array_filter($available_slots, fn($slot) => !in_array($slot, $booked_slots));
     }
 
+    
+
+
+
     public function optionsForStatusUpdate()
     {
         $user = User::find(Filament::auth()->user()->id);

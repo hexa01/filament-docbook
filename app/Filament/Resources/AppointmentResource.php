@@ -79,8 +79,7 @@ class AppointmentResource extends Resource
                                     ->get()
                                     ->pluck('user.name', 'id');
                             })
-                            ->required()
-                            ->live(),
+                            ->required(),
 
                         // Appointment Date
                         DatePicker::make('appointment_date')
