@@ -6,7 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class Doctor extends Model
 {
-    protected $guarded = [];
+    protected $fillable = [
+        'user_id',
+        'specialization_id',
+        'hourly_rate',
+        'bio',
+    ];
 
     public function user(){
         return $this->belongsTo(User::class);

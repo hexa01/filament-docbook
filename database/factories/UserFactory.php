@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Specialization;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -24,20 +25,75 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->name(),
-            'email' => fake()->unique()->safeEmail(),
-            'email_verified_at' => now(),
-            'password' => static::$password ??= Hash::make('password'),
+            'name' => $this->faker->name(),
+            'email' => $this->faker->unique()->safeEmail(),
+            'role' => 'patient',
+            'address' => $this->faker->address(),
+            'phone' => $this->faker->phoneNumber(),
+            'gender' => $this->faker->randomElement(['male', 'female', 'other']),
+            'dob' => $this->faker->date(),
+            'password' => Hash::make('12345678'), // All users have the same password
             'remember_token' => Str::random(10),
         ];
     }
+    /**
+     * Indicate that the model's role is 'superadmin'.
+     *
+     * @return \Illuminate\Database\Eloquent\Factories\Factory
+     */
+    public function superadmin()
+    {
+        return $this->state([
+            'role' => 'superadmin',
+        ]);
+    }
+
+    /**
+     * Indicate that the model's role is 'admin'.
+     *
+     * @return \Illuminate\Database\Eloquent\Factories\Factory
+     */
+    public function admin()
+    {
+        return $this->state([
+            'role' => 'admin',
+        ]);
+    }
+
+
+    /**
+     * Indicate that the model's role is 'doctor'.
+     *
+     * @return \Illuminate\Database\Eloquent\Factories\Factory
+     */
+    public function doctor()
+    {
+        return $this->state([
+            'role' => 'doctor',
+        ]);
+    }
+
+
+    /**
+     * Indicate that the model's role is 'patient'.
+     *
+     * @return \Illuminate\Database\Eloquent\Factories\Factory
+     */
+    public function patient()
+    {
+        return $this->state([
+            'role' => 'patient',
+        ]);
+    }
+
+
 
     /**
      * Indicate that the model's email address should be unverified.
      */
     public function unverified(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn(array $attributes) => [
             'email_verified_at' => null,
         ]);
     }

@@ -18,9 +18,8 @@ return new class extends Migration
             $table->foreignIdFor(Patient::class)->constrained()->cascadeOnDelete();
             $table->foreignIdFor(Doctor::class)->constrained()->cascadeOnDelete();
             $table->date('appointment_date');
-            $table->time('start_time');
-            $table->enum('status',['pending','booked','missed','completed'])->default('pending');
-            $table->text('doctor_message')->nullable();
+            $table->time('slot');
+            $table->enum('status',['pending','booked','completed','missed'])->default('pending');
             $table->timestamps();
         });
     }

@@ -140,7 +140,7 @@ class ListAppointments extends ListRecords
                                 ->send();
                             $action->cancel();
                         }
-                        elseif ($record->status != 'pending') {
+                        elseif (Auth::user()->role !== 'admin' && $record->status != 'pending') {
                             Notification::make()
                                 ->danger()
                                 ->title('Appointment not deleted')
@@ -150,11 +150,12 @@ class ListAppointments extends ListRecords
                         }
                     })
                     ->successNotification(function ($record) {
+                        $text = app(AppointmentService::class)->formatAppointmentAsReadableText($record);
                         return Notification::make()
                             ->success()
                             ->icon('heroicon-o-trash')
                             ->title('Appointment Removed!')
-                            ->body("The appointment with Dr. {$record->doctor->user->name} for {$record->patient->user->name} on {$record->appointment_date} has been removed.");
+                            ->body("$text has been removed.");
                     }),
 
                 //   if put action put it inside actionGroup
@@ -182,10 +183,8 @@ class ListAppointments extends ListRecords
                             }
                             return 'success';
                         })
-
                         ->action(function ($record) {
                             $record->update(['status' => 'completed']);
-
                             $text = app(AppointmentService::class)->formatAppointmentAsReadableText($record);
                             Notification::make()
                                 ->title('Appointment Completed')
@@ -214,8 +213,12 @@ class ListAppointments extends ListRecords
                             return 'danger';
                         }),
                     EditAction::make()
-                        ->hidden(fn($record) =>  Auth::user()->role === 'admin' && $record->status === 'completed')
-                        ->hidden(fn($record) => Auth::user()->role === 'patient' && $record->status !== 'pending')
+                        ->hidden(function($record){
+                            return (Auth::user()->role === 'admin' && $record->status === 'completed') ||
+                            (Auth::user()->role === 'patient' && $record->status !== 'pending');
+                        })
+                        // ->disabled(fn($record) =>  (Auth::user()->role === 'admin' && $record->status === 'completed'))
+                        // ->hidden(fn($record) => Auth::user()->role === 'patient' && $record->status !== 'pending')
                         ->label('Edit Appointment'),
                 ])
 

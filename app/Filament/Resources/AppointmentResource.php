@@ -68,14 +68,26 @@ class AppointmentResource extends Resource
                             )
                             ->hidden(fn()=>Auth::user()->role === 'patient')
                             ->required(),
+                            Forms\Components\Select::make('specialization_id')
+                            ->label('Specialization')
+                            ->options(fn() => Specialization::pluck('name', 'id')->toArray())
+                            ->required()
+                            // ->disabled(fn(callable $get) => $get('id') !== null)
+                            ->live()
+                            ,
+
 
                         // Doctor Selection
                         Select::make('doctor_id')
                             ->label('Doctor Name')
                             ->searchable()
-                            ->preload()
                             ->options(function (callable $get) {
+                                $specializationId = $get('specialization_id');
+                                if (!$specializationId) {
+                                    return [];
+                                }
                                 return Doctor::with('user')
+                                    ->where('specialization_id', $specializationId)
                                     ->get()
                                     ->pluck('user.name', 'id');
                             })
@@ -85,12 +97,14 @@ class AppointmentResource extends Resource
                         DatePicker::make('appointment_date')
                             ->required()
                             ->live()
-                            ->minDate(Carbon::tomorrow())
-                            ->native(false),
+                            ->minDate(Carbon::tomorrow()),
 
                         // Available Slots
                         Select::make('start_time')
                             ->label('Available Slots')
+                            ->placeholder(function (callable $get) {
+                                return $get('doctor_id') === null ? 'Select a slot' : 'No slots available';
+                            })
                             ->options(function (callable $get) {
                                 $doctor = Doctor::find($get('doctor_id'));
                                 $appointment_date = $get('appointment_date');

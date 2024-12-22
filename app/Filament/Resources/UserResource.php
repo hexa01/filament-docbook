@@ -49,6 +49,7 @@ class UserResource extends Resource
                 Forms\Components\Select::make('specialization_id')
                     ->label('Specialization')
                     ->options(fn() => Specialization::pluck('name', 'id')->toArray())
+                    // ->disabled(fn(callable $get) => $get('id') !== null)
                     ->required()
                     // ->default(fn($record) => $record->specialization_id)
                     ->visible(fn($get) => $get('role') == 'doctor'),
@@ -72,8 +73,15 @@ class UserResource extends Resource
                     ->tel(),
                 // Forms\Components\DateTimePicker::make('email_verified_at'),
                 Forms\Components\TextInput::make('password')
+                ->label("New password")
+                ->password()
                     ->password()
-                    ->required(),
+                    ->required(fn(callable $get) => $get('id') == null)
+                    ->placeholder(function(callable $get){
+                        if($get('id') !== null){
+                            return 'Enter new password here only if you want to reset password';
+                        }
+                    }),
             ]);
     }
 

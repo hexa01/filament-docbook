@@ -17,7 +17,7 @@ return new class extends Migration
             $table->id();
             $table->foreignIdFor(User::class)->constrained()->cascadeOnDelete();
             $table->foreignIdFor(Specialization::class)->nullable()->constrained()->cascadeOnDelete();
-            $table->enum('status',['available','not_available'])->default('available');
+            $table->decimal('hourly_rate')->default(500);
             $table->text('bio')->nullable();
             $table->timestamps();
         });

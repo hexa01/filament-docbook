@@ -18,8 +18,8 @@ class AppointmentService
         $appointment_day = $appointment_date->englishDayOfWeek;
 
         $schedule = $doctor->schedules->where('day', $appointment_day)->first();
-
-        if (!$schedule) {
+        $schedule_status = $schedule->status;
+        if (!$schedule || $schedule_status !== 'available') {
             return [];
         }
         $slots = $schedule->slots;
@@ -36,7 +36,7 @@ class AppointmentService
         return array_filter($available_slots, fn($slot) => !in_array($slot, $booked_slots));
     }
 
-    
+
 
 
 

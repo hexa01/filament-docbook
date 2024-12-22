@@ -137,7 +137,7 @@ class ScheduleResource extends Resource
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
-                Action::make('updateName')
+                Action::make('updateSchedule')
                 ->label("Edit")
                 ->form([
                     Forms\Components\TextInput::make('day')

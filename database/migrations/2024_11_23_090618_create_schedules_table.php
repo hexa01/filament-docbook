@@ -19,7 +19,8 @@ return new class extends Migration
             $table->enum('day', ['Sunday','Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']);
             $table->time('start_time');
             $table->time('end_time');
-            $table->Integer('slots')->nullable();
+            $table->Integer('slot_count')->nullable();
+            $table->enum('status',['available','unavailable'])->default('available');
             $table->timestamps();
         });
     }
