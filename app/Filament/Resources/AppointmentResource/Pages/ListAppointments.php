@@ -55,7 +55,7 @@ class ListAppointments extends ListRecords
                 TextColumn::make('appointment_date')
                     ->date()
                     ->sortable(),
-                TextColumn::make('start_time')
+                TextColumn::make('slot')
                     ->label("Slot"),
                 TextColumn::make('status')
                     ->searchable(),
@@ -130,33 +130,6 @@ class ListAppointments extends ListRecords
 
             ->actions([
                 ViewAction::make(),
-                DeleteAction::make()
-                    ->before(function ($record, DeleteAction $action) {
-                        if (Auth::user()->role === 'admin' && $record->status === 'completed') {
-                            Notification::make()
-                                ->danger()
-                                ->title('Appointment not deleted')
-                                ->body('You can\'t delete appointment that is already completed.')
-                                ->send();
-                            $action->cancel();
-                        }
-                        elseif (Auth::user()->role !== 'admin' && $record->status != 'pending') {
-                            Notification::make()
-                                ->danger()
-                                ->title('Appointment not deleted')
-                                ->body("You can't delete appointment that is already $record->status.")
-                                ->send();
-                            $action->cancel();
-                        }
-                    })
-                    ->successNotification(function ($record) {
-                        $text = app(AppointmentService::class)->formatAppointmentAsReadableText($record);
-                        return Notification::make()
-                            ->success()
-                            ->icon('heroicon-o-trash')
-                            ->title('Appointment Removed!')
-                            ->body("$text has been removed.");
-                    }),
 
                 //   if put action put it inside actionGroup
                 //     Action::make('review')
@@ -176,9 +149,14 @@ class ListAppointments extends ListRecords
                         ->label('Mark as Completed')
                         ->icon('heroicon-s-check-circle')
                         ->hidden(fn() => $user->role === 'patient')
-                        ->disabled(fn($record) => $record->status === 'completed' || $record->status === 'missed')
+                        ->disabled(fn($record) => $record->status === 'completed' ||
+                            $record->status === 'missed' ||
+                            Carbon::parse($record->appointment_date)->isFuture())
                         ->color(function ($record) {
-                            if ($record->status === 'completed' || $record->status === 'missed') {
+                            if (
+                                $record->status === 'completed' || $record->status === 'missed' ||
+                                Carbon::parse($record->appointment_date)->isFuture()
+                            ) {
                                 return 'gray';
                             }
                             return 'success';
@@ -196,7 +174,9 @@ class ListAppointments extends ListRecords
                         ->label('Mark as Missed')
                         ->icon('heroicon-s-x-circle')
                         ->hidden(fn() => $user->role === 'patient')
-                        ->disabled(fn($record) => $record->status === 'completed' || $record->status === 'missed')
+                        ->disabled(fn($record) => $record->status === 'completed' ||
+                            $record->status === 'missed' ||
+                            Carbon::parse($record->appointment_date)->isFuture())
                         ->action(function ($record) {
                             $record->update(['status' => 'missed']);
                             $text = app(AppointmentService::class)->formatAppointmentAsReadableText($record);
@@ -207,19 +187,59 @@ class ListAppointments extends ListRecords
                                 ->send();
                         })
                         ->color(function ($record) {
-                            if ($record->status === 'completed' || $record->status === 'missed') {
+                            if ($record->status === 'completed' || $record->status === 'missed' ||
+                            Carbon::parse($record->appointment_date)->isFuture()) {
                                 return 'gray';
                             }
                             return 'danger';
                         }),
                     EditAction::make()
-                        ->hidden(function($record){
+                        ->disabled(function ($record) {
                             return (Auth::user()->role === 'admin' && $record->status === 'completed') ||
-                            (Auth::user()->role === 'patient' && $record->status !== 'pending');
+                                (Auth::user()->role === 'patient' && $record->status !== 'pending');
+                        })
+                        ->color(function ($record) {
+                            if ((Auth::user()->role === 'admin' && $record->status === 'completed') ||
+                                (Auth::user()->role === 'patient' && $record->status !== 'pending')
+                            ) {
+                                return 'gray';
+                            }
+                            return 'yellow';
                         })
                         // ->disabled(fn($record) =>  (Auth::user()->role === 'admin' && $record->status === 'completed'))
                         // ->hidden(fn($record) => Auth::user()->role === 'patient' && $record->status !== 'pending')
                         ->label('Edit Appointment'),
+                    DeleteAction::make()
+                        ->label('Delete Appointment')
+                        ->disabled(function ($record) {
+                            return (Auth::user()->role === 'admin' && $record->status === 'completed') ||
+                                (Auth::user()->role === 'patient' && $record->status !== 'pending');
+                        })
+                        ->before(function ($record, DeleteAction $action) {
+                            if (Auth::user()->role === 'admin' && $record->status === 'completed') {
+                                Notification::make()
+                                    ->danger()
+                                    ->title('Appointment not deleted')
+                                    ->body('You can\'t delete appointment that is already completed.')
+                                    ->send();
+                                $action->cancel();
+                            } elseif (Auth::user()->role !== 'admin' && $record->status != 'pending') {
+                                Notification::make()
+                                    ->danger()
+                                    ->title('Appointment not deleted')
+                                    ->body("You can't delete appointment that is already $record->status.")
+                                    ->send();
+                                $action->cancel();
+                            }
+                        })
+                        ->successNotification(function ($record) {
+                            $text = app(AppointmentService::class)->formatAppointmentAsReadableText($record);
+                            return Notification::make()
+                                ->success()
+                                ->icon('heroicon-o-trash')
+                                ->title('Appointment Removed!')
+                                ->body("$text has been removed.");
+                        }),
                 ])
 
                     ->tooltip('More Actions')

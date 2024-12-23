@@ -35,7 +35,7 @@
                             <br>
                             <div id="card-element" class="form-control"></div>
                             <button id='pay-btn' class="btn btn-success mt-3" type="button"
-                                style="margin-top: 20px; width: 100%;padding: 7px;" onclick="createToken()">PAY 500
+                                style="margin-top: 20px; width: 100%;padding: 7px;" onclick="createToken()">PAY {{$payment->amount}}
                             </button>
                             <form>
                     </div>

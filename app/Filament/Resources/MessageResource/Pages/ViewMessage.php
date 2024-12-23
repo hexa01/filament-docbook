@@ -32,7 +32,7 @@ class ViewMessage extends ViewRecord
                         TextEntry::make('appointment.patient.user.name')->label("Patient's name"),
                         TextEntry::make('appointment.doctor.user.name')->label("Doctor's name"),
                         TextEntry::make('appointment.appointment_date')->label("Appointment Date"),
-                        TextEntry::make('appointment.start_time')->label('Appointment Time'),
+                        TextEntry::make('appointment.slot')->label('Appointment Time'),
                     ])->columns(2),
                 Section::make('Message Information')
                     ->schema([

@@ -131,25 +131,25 @@ class PaymentResource extends Resource
 
             ->actions([
                 ActionGroup::make([
-                    Action::make('Pay with eSewa')
-                        ->action(function ($record) {
-                            // Update payment status to 'paid'
-                            $record->status = 'paid';
-                            $record->payment_method = 'esewa';
-                            $record->save(); // Save the updated record
+                    // Action::make('Pay with eSewa')
+                    //     ->action(function ($record) {
+                    //         // Update payment status to 'paid'
+                    //         $record->status = 'paid';
+                    //         $record->payment_method = 'esewa';
+                    //         $record->save(); // Save the updated record
 
-                            $appointment =  $record->appointment;
-                            $appointment->status = 'booked';
-                            $appointment->save();
-                            return redirect()->route('filament.admin.resources.payments.index');
+                    //         $appointment =  $record->appointment;
+                    //         $appointment->status = 'booked';
+                    //         $appointment->save();
+                    //         return redirect()->route('filament.admin.resources.payments.index');
 
-                            // return redirect()->route('payment.esewa', ['appointmentId' => $record->appointment_id]);
-                        })
+                    //         // return redirect()->route('payment.esewa', ['appointmentId' => $record->appointment_id]);
+                    //     })
 
-                        ->icon('heroicon-o-currency-dollar')
-                        ->color('success')
-                        ->label('Pay via eSewa')
-                        ->tooltip('Click to pay via eSewa'),
+                    //     ->icon('heroicon-o-currency-dollar')
+                    //     ->color('success')
+                    //     ->label('Pay via eSewa')
+                    //     ->tooltip('Click to pay via eSewa'),
                     Action::make('Pay with Stripe')
                         ->url(fn($record) => route('stripe.checkout', ['payment' => $record]))
                         ->icon('heroicon-o-currency-dollar')
@@ -185,10 +185,10 @@ class PaymentResource extends Resource
     {
         return [
             'index' => Pages\ListPayments::route('/'),
-            'create' => Pages\CreatePayment::route('/create'),
+            // 'create' => Pages\CreatePayment::route('/create'),
             // 'stripe' => Pages\StripePayment::route('/stripe/{appointmentId}'),
-            'view' => Pages\ViewPayment::route('/{record}'),
-            'edit' => Pages\EditPayment::route('/{record}/edit'),
+            // 'view' => Pages\ViewPayment::route('/{record}'),
+            // 'edit' => Pages\EditPayment::route('/{record}/edit'),
         ];
     }
 

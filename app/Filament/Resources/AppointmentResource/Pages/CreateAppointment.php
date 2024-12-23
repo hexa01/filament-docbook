@@ -55,7 +55,7 @@ class CreateAppointment extends CreateRecord
 
         $appointmentService = app(AppointmentService::class);
         $availableSlots = $appointmentService->generateAvailableSlots($doctor, $appointment_date);
-        $slot = $data['start_time'];
+        $slot = $data['slot'];
         if (!in_array($slot, $availableSlots)) {
             Notification::make()
             ->title('Slot Already Booked')

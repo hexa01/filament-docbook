@@ -22,6 +22,7 @@ class CreateUser extends CreateRecord
             $doctor = Doctor::create([
                 'user_id' => $record->id,
                 'specialization_id' => $data['specialization_id'],
+                'hourly_rate' => $data['hourly_rate'],
             ]);
 
             $days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -31,7 +32,8 @@ class CreateUser extends CreateRecord
                     'day' => $day,
                     'start_time' => '10:00',
                     'end_time' => '17:00',
-                    'slots' => 14,
+                    'slot_count' => 14,
+                    // 'status' => 'available',
                 ]);
             }
 
@@ -39,8 +41,6 @@ class CreateUser extends CreateRecord
         } elseif ($data['role'] === 'patient') {
             Patient::create([
                 'user_id' => $record->id,
-                'gender' => $data['gender'],
-                'dob' => $data['dob'],
             ]);
         }
     }

@@ -175,7 +175,7 @@ class MessageResource extends Resource
             'index' => Pages\ListMessages::route('/'),
             'create' => Pages\CreateMessage::route('/create'),
             'view' => Pages\ViewMessage::route('/{record}'),
-            'edit' => Pages\EditMessage::route('/{record}/edit'),
+            // 'edit' => Pages\EditMessage::route('/{record}/edit'),
         ];
     }
 }

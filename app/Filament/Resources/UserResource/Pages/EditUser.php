@@ -24,17 +24,23 @@ class EditUser extends EditRecord
     // dd($data);
     $currentEditingUser = User::find($data['id']);
     // dd($currentEditingUser->doctor->specialization->name);
-
- 
-    if ($data['role'] == 'patient'){
-        $data['gender'] = $currentEditingUser->patient->gender ?? null;
-        $data['dob'] = $currentEditingUser->patient->dob ?? null;
-    }
+    // if ($data['role'] == 'patient'){
+    //     $data['gender'] = $currentEditingUser->patient->gender ?? null;
+    //     $data['dob'] = $currentEditingUser->patient->dob ?? null;
+    // }
     if ($data['role'] == 'doctor'){
         $data['specialization_id'] = $currentEditingUser->doctor->specialization->id ?? null;
+        $data['hourly_rate'] = $currentEditingUser->doctor->hourly_rate ?? null;
+        // $data['bio'] = $currentEditingUser->doctor->bio ?? null;
     }
+    return $data;
+}
 
-
+protected function mutateFormDataBeforeSave(array $data): array
+{
+    if($data['password'] == null){
+        unset($data['password']);
+    }
     return $data;
 }
 }

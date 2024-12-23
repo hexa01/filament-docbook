@@ -22,17 +22,17 @@ class AppointmentService
         if (!$schedule || $schedule_status !== 'available') {
             return [];
         }
-        $slots = $schedule->slots;
+        $slot_count = $schedule->slot_count;
         $start_time = Carbon::parse($schedule->start_time);
         $available_slots = [];
 
-        for ($i = 0; $i < $slots; $i++) {
+        for ($i = 0; $i < $slot_count; $i++) {
             $available_slots[] = $start_time->format('H:i');
             $start_time->addMinutes(30);
         }
         $booked_slots = Appointment::where('doctor_id', $doctor->id)
             ->whereDate('appointment_date', $appointment_date)
-            ->pluck('start_time')->toArray();
+            ->pluck('slot')->toArray();
         return array_filter($available_slots, fn($slot) => !in_array($slot, $booked_slots));
     }
 
@@ -69,14 +69,14 @@ class AppointmentService
 
     // Format the appointment text based on the user's role
     if ($user->hasRole('doctor')) {
-        $labeledText = "Appointment with {$appointment->patient->user->name} on {$appointment->appointment_date} at {$appointment->start_time}";
+        $labeledText = "Appointment with {$appointment->patient->user->name} on {$appointment->appointment_date} at {$appointment->slot}";
     }
     if ($user->hasRole('patient')) {
-        $labeledText = "Appointment with {$appointment->doctor->user->name} on {$appointment->appointment_date} at {$appointment->start_time}";
+        $labeledText = "Appointment with {$appointment->doctor->user->name} on {$appointment->appointment_date} at {$appointment->slot}";
     }
 
     if ($user->hasRole('admin')) {
-        $labeledText = "Appointment of {$appointment->patient->user->name} with Dr. {$appointment->doctor->user->name} on {$appointment->appointment_date} at {$appointment->start_time}";
+        $labeledText = "Appointment of {$appointment->patient->user->name} with Dr. {$appointment->doctor->user->name} on {$appointment->appointment_date} at {$appointment->slot}";
     }
 
     return $labeledText;
@@ -101,26 +101,4 @@ public function formatAppointmentsAsReadableText($appointments)
     return $labeledTexts;
 }
 
-
-    // public function formatAppointmentsAsReadableText($appointments)
-    // {
-    //     $user = User::find(Filament::auth()->user()->id);
-    //     if ($user->hasRole('doctor')) {
-    //         $labeledText = $appointments->mapWithKeys(function ($appointment) {
-    //             return [
-    //                 $appointment->id => "Appointment with {$appointment->patient->user->name} on {$appointment->appointment_date} at {$appointment->start_time}",
-    //             ];
-    //         })->toArray();
-    //     }
-
-    //     if ($user->hasRole('admin')) {
-    //         $labeledText = $appointments->mapWithKeys(function ($appointment) {
-    //             return [
-    //                 $appointment->id => "Appointment of {$appointment->patient->user->name} with Dr. {$appointment->doctor->user->name} on {$appointment->appointment_date} at {$appointment->start_time}",
-    //             ];
-    //         })->toArray();
-    //     }
-    //     return $labeledText;
-
-    // }
 }

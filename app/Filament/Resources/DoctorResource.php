@@ -34,17 +34,18 @@ class DoctorResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('user_id')
+                Forms\Components\TextInput::make('user.name')
                     ->required()
-                    ->numeric(),
+                    ->searchable(),
                     Forms\Components\Select::make('specialization_id')
                     ->label('Specialization')
                     ->options(fn () => Specialization::pluck('name', 'id')->toArray())
                     ->required(),
-                Forms\Components\TextInput::make('status')
-                    ->required(),
-                Forms\Components\Textarea::make('bio')
-                    ->columnSpanFull(),
+                Forms\Components\TextInput::make('hourly_rate')
+                    ->required()
+                    ->numeric(),
+                // Forms\Components\Textarea::make('bio')
+                //     ->columnSpanFull(),
             ]);
     }
 
@@ -57,10 +58,11 @@ class DoctorResource extends Resource
                     ->numeric()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('specialization.name')
+                ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('hourly_rate')
                     ->numeric()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('status')
-                    ->searchable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -98,9 +100,9 @@ class DoctorResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListDoctors::route('/'),
-            'create' => Pages\CreateDoctor::route('/create'),
-            'edit' => Pages\EditDoctor::route('/{record}/edit'),
+            // 'index' => Pages\ListDoctors::route('/'),
+            // 'create' => Pages\CreateDoctor::route('/create'),
+            // 'edit' => Pages\EditDoctor::route('/{record}/edit'),
         ];
     }
 }

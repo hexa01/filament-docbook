@@ -73,8 +73,7 @@ class AppointmentResource extends Resource
                             ->options(fn() => Specialization::pluck('name', 'id')->toArray())
                             ->required()
                             // ->disabled(fn(callable $get) => $get('id') !== null)
-                            ->live()
-                            ,
+                            ->live(),
 
 
                         // Doctor Selection
@@ -100,7 +99,7 @@ class AppointmentResource extends Resource
                             ->minDate(Carbon::tomorrow()),
 
                         // Available Slots
-                        Select::make('start_time')
+                        Select::make('slot')
                             ->label('Available Slots')
                             ->placeholder(function (callable $get) {
                                 return $get('doctor_id') === null ? 'Select a slot' : 'No slots available';
@@ -371,7 +370,7 @@ class AppointmentResource extends Resource
                         TextEntry::make('patient.user.name')->label('Patient Name'),
                         TextEntry::make('doctor.user.name')->label('Doctor Name'),
                         TextEntry::make('appointment_date')->label('Appointment Date'),
-                        TextEntry::make('start_time')->label('Appointment Slot Time'),
+                        TextEntry::make('slot')->label('Appointment Slot Time'),
                         TextEntry::make('status')->label('Appointment Status'),
                         // TextEntry::make('doctors_count')->label('Number of doctors for this specialization')
                     ])->columns(2),

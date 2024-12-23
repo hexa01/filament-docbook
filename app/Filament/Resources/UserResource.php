@@ -37,6 +37,19 @@ class UserResource extends Resource
                 Forms\Components\TextInput::make('email')
                     ->email()
                     ->required(),
+                    Forms\Components\Select::make('gender')
+                    ->label('Gender')
+                    ->required()
+                    ->options([
+                        'male' => 'Male',
+                        'female' => 'Female',
+                        'other' => 'Other',
+                    ]),
+                    Forms\Components\DatePicker::make('dob')
+                    ->label('Date of Birth')
+                    ->required()
+                    ->native(false)
+                    ->displayFormat('d/m/Y'),
                 Forms\Components\Select::make('role')
                     ->required()
                     ->label('Role')
@@ -53,24 +66,11 @@ class UserResource extends Resource
                     ->required()
                     // ->default(fn($record) => $record->specialization_id)
                     ->visible(fn($get) => $get('role') == 'doctor'),
-                Forms\Components\DatePicker::make('dob')
-                    ->label('Date of Birth')
+                    Forms\Components\TextInput::make('hourly_rate')
                     ->required()
-                    ->native(false)
-                    ->displayFormat('d/m/Y')
-                    ->visible(fn($get) => $get('role') == 'patient'),
-                Forms\Components\Select::make('gender')
-                    ->label('Gender')
-                    ->required()
-                    ->options([
-                        'male' => 'Male',
-                        'female' => 'Female',
-                        'other' => 'Other',
-                    ])
-                    ->visible(fn($get) => $get('role') == 'patient'),
+                    ->visible(fn($get) => $get('role') == 'doctor'),
                 Forms\Components\TextInput::make('address'),
-                Forms\Components\TextInput::make('phone')
-                    ->tel(),
+                Forms\Components\TextInput::make('phone'),
                 // Forms\Components\DateTimePicker::make('email_verified_at'),
                 Forms\Components\TextInput::make('password')
                 ->label("New password")
@@ -102,7 +102,8 @@ class UserResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('address')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('phone')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('created_at')

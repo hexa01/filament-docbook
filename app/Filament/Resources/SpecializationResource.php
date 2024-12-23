@@ -37,7 +37,7 @@ class SpecializationResource extends Resource
             ->schema([
                 Forms\Components\TextInput::make('name')
                     ->required()
-                    // ->exists('specializations', 'name')
+                    ->unique()
                     ->maxLength(255),
 
             ]);
@@ -66,27 +66,28 @@ class SpecializationResource extends Resource
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
-                Action::make('updateName')
-                    ->label("Edit")
-                    ->form([
-                        TextInput::make('name')
-                            ->label('Name')
-                            ->required()
-                    ])
-                    ->visible(fn() => Auth::user()->role === 'admin' )
-                    ->color('yellow')
-                    ->icon('heroicon-s-pencil')
-                    ->action(function ($record, $data) {
-                        $record->update([
-                            'name' => $data['name'],
-                        ]);
-                        // $text = app(AppointmentService::class)->formatAppointmentAsReadableText($record);
-                        Notification::make()
-                            ->title('Specialization updated')
-                            ->success()
-                            ->body("Specialization name updated to $record->name")
-                            ->send();
-                    }),
+                Tables\Actions\EditAction::make(),
+                // Action::make('updateName')
+                //     ->label("Edit")
+                //     ->form([
+                //         TextInput::make('name')
+                //             ->label('Name')
+                //             ->required()
+                //     ])
+                //     ->visible(fn() => Auth::user()->role === 'admin' )
+                //     ->color('yellow')
+                //     ->icon('heroicon-s-pencil')
+                //     ->action(function ($record, $data) {
+                //         $record->update([
+                //             'name' => $data['name'],
+                //         ]);
+                //         // $text = app(AppointmentService::class)->formatAppointmentAsReadableText($record);
+                //         Notification::make()
+                //             ->title('Specialization updated')
+                //             ->success()
+                //             ->body("Specialization name updated to $record->name")
+                //             ->send();
+                //     }),
                 ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -125,7 +126,7 @@ class SpecializationResource extends Resource
             'index' => Pages\ListSpecializations::route('/'),
             'create' => Pages\CreateSpecialization::route('/create'),
             'view' => Pages\ViewSpecialization::route('/{record}'),
-            'edit' => Pages\EditSpecialization::route('/{record}/edit'),
+            // 'edit' => Pages\EditSpecialization::route('/{record}/edit'),
         ];
     }
 }

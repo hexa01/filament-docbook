@@ -93,9 +93,9 @@ class ScheduleResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('start_time'),
                 Tables\Columns\TextColumn::make('end_time'),
-                Tables\Columns\TextColumn::make('slots')
-                    ->numeric()
-                    ->sortable(),
+                // Tables\Columns\TextColumn::make('slot_count')
+                //     ->numeric()
+                //     ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -172,11 +172,11 @@ class ScheduleResource extends Resource
                     $startTime = Carbon::parse($data['start_time']);
                     $endTime = Carbon::parse($data['end_time']);
                     // Calculate the number of 30-minute slots
-                    $slots = $startTime->diffInMinutes($endTime) / 30;
+                    $slot_count = $startTime->diffInMinutes($endTime) / 30;
                     $record->update([
                         'start_time' => $startTime->format('H:i'),  // 24-hour format
                         'end_time' => $endTime->format('H:i'),      // 24-hour format
-                        'slots' => $slots,
+                        'slot_count' => $slot_count,
                     ]);
 
                     // $text = app(AppointmentService::class)->formatAppointmentAsReadableText($record);
@@ -217,11 +217,11 @@ class ScheduleResource extends Resource
                             $endTime = Carbon::parse($data['end_time']);
 
                             // Calculate the number of 30-minute slots
-                            $slots = $startTime->diffInMinutes($endTime) / 30;
+                            $slot_count = $startTime->diffInMinutes($endTime) / 30;
                             $record->update([
                                 'start_time' => $startTime->format('H:i'),  // 24-hour format
                                 'end_time' => $endTime->format('H:i'),      // 24-hour format
-                                'slots' => $slots,
+                                'slot_count' => $slot_count,
                             ]);
                         }
                         Notification::make()
