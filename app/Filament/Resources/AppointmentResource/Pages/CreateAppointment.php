@@ -74,10 +74,12 @@ return $data;
     {
         $record = $this->record;  // Access the created Appointment model
         $data = $this->form->getState();
-        $price = 500;
+        $hourly_rate = $record->doctor->hourly_rate;
+        $slot_duration = 30; //in minutes
+        $amount = $hourly_rate/$slot_duration;
         Payment::create([
             'appointment_id' => $record->id,
-            'amount' => $price,
+            'amount' => $amount,
             'status' => 'unpaid',
         ]);
     }

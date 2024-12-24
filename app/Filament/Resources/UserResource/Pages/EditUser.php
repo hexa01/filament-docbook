@@ -21,13 +21,7 @@ class EditUser extends EditRecord
 
     protected function mutateFormDataBeforeFill(array $data): array
 {
-    // dd($data);
     $currentEditingUser = User::find($data['id']);
-    // dd($currentEditingUser->doctor->specialization->name);
-    // if ($data['role'] == 'patient'){
-    //     $data['gender'] = $currentEditingUser->patient->gender ?? null;
-    //     $data['dob'] = $currentEditingUser->patient->dob ?? null;
-    // }
     if ($data['role'] == 'doctor'){
         $data['specialization_id'] = $currentEditingUser->doctor->specialization->id ?? null;
         $data['hourly_rate'] = $currentEditingUser->doctor->hourly_rate ?? null;

@@ -39,7 +39,7 @@ class StripeController extends Controller
         $text = app(AppointmentService::class)->formatAppointmentAsReadableText($appointment);
         Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
         Stripe\Charge::create([
-            "amount" => 5 * 100,
+            "amount" => $payment->amount,
             "currency" => "usd",
             "source" => $request->stripeToken,
             "description" => $text,

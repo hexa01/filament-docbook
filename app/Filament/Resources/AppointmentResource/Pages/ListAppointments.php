@@ -149,13 +149,15 @@ class ListAppointments extends ListRecords
                         ->label('Mark as Completed')
                         ->icon('heroicon-s-check-circle')
                         ->hidden(fn() => $user->role === 'patient')
+                        ->requiresConfirmation()
                         ->disabled(fn($record) => $record->status === 'completed' ||
-                            $record->status === 'missed' ||
-                            Carbon::parse($record->appointment_date)->isFuture())
+                            $record->status === 'missed'
+                            || Carbon::parse($record->appointment_date)->isFuture()
+                            )
                         ->color(function ($record) {
                             if (
-                                $record->status === 'completed' || $record->status === 'missed' ||
-                                Carbon::parse($record->appointment_date)->isFuture()
+                                $record->status === 'completed' || $record->status === 'missed'
+                                || Carbon::parse($record->appointment_date)->isFuture()
                             ) {
                                 return 'gray';
                             }
@@ -173,6 +175,7 @@ class ListAppointments extends ListRecords
                     Action::make('markMissed')
                         ->label('Mark as Missed')
                         ->icon('heroicon-s-x-circle')
+                        ->requiresConfirmation()
                         ->hidden(fn() => $user->role === 'patient')
                         ->disabled(fn($record) => $record->status === 'completed' ||
                             $record->status === 'missed' ||

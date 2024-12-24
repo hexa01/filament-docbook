@@ -25,7 +25,7 @@ class PaymentResource extends Resource
 {
     protected static ?string $model = Payment::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-credit-card';
     protected static ?string $navigationGroup = 'Appointment Management';
 
     public static function form(Form $form): Form
@@ -151,7 +151,18 @@ class PaymentResource extends Resource
                     //     ->label('Pay via eSewa')
                     //     ->tooltip('Click to pay via eSewa'),
                     Action::make('Pay with Stripe')
-                        ->url(fn($record) => route('stripe.checkout', ['payment' => $record]))
+                        ->url(function($record) {
+
+                            $url = url('/admin/payments/stripe', ['payment' => $record]);
+                            // dd($url);
+                            return $url;
+                        })
+                        // ->action(function ($record) {
+                        //     // Redirect to the CheckoutPage with payment details
+                        //     return redirect()->route('filament.pages.checkout-page', [
+                        //         'payment' => $record->id, // Pass payment ID
+                        //     ]);
+                        // })
                         ->icon('heroicon-o-currency-dollar')
                         // ->button()
                         ->color('secondary')
@@ -185,6 +196,8 @@ class PaymentResource extends Resource
     {
         return [
             'index' => Pages\ListPayments::route('/'),
+            'stripe' => Pages\PaymentPage::route('/stripe/{record}'),
+
             // 'create' => Pages\CreatePayment::route('/create'),
             // 'stripe' => Pages\StripePayment::route('/stripe/{appointmentId}'),
             // 'view' => Pages\ViewPayment::route('/{record}'),
