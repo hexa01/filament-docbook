@@ -91,7 +91,7 @@ class PaymentResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])->defaultSort('status', 'desc')
-            ->defaultSort('appointment.appointment_date', 'desc')
+            // ->defaultSort('appointment.appointment_date', 'asc')
             ->modifyQueryUsing(function (Builder $query) {
                 // Get the currently authenticated user
                 $user = User::find(Filament::auth()->user()->id);
@@ -124,65 +124,22 @@ class PaymentResource extends Resource
             ->filters([
                 //
             ])
-
-            //->url(fn ($record) => route('filament.admin.resources.payments.stripe', ['appointmentId' => $record->id]))
-
-
-
             ->actions([
-                ActionGroup::make([
-                    // Action::make('Pay with eSewa')
-                    //     ->action(function ($record) {
-                    //         // Update payment status to 'paid'
-                    //         $record->status = 'paid';
-                    //         $record->payment_method = 'esewa';
-                    //         $record->save(); // Save the updated record
-
-                    //         $appointment =  $record->appointment;
-                    //         $appointment->status = 'booked';
-                    //         $appointment->save();
-                    //         return redirect()->route('filament.admin.resources.payments.index');
-
-                    //         // return redirect()->route('payment.esewa', ['appointmentId' => $record->appointment_id]);
-                    //     })
-
-                    //     ->icon('heroicon-o-currency-dollar')
-                    //     ->color('success')
-                    //     ->label('Pay via eSewa')
-                    //     ->tooltip('Click to pay via eSewa'),
                     Action::make('Pay with Stripe')
                         ->url(function($record) {
 
                             $url = url('/admin/payments/stripe', ['payment' => $record]);
-                            // dd($url);
                             return $url;
                         })
-                        // ->action(function ($record) {
-                        //     // Redirect to the CheckoutPage with payment details
-                        //     return redirect()->route('filament.pages.checkout-page', [
-                        //         'payment' => $record->id, // Pass payment ID
-                        //     ]);
-                        // })
-                        ->icon('heroicon-o-currency-dollar')
-                        // ->button()
-                        ->color('secondary')
                         ->label('Pay via Stripe')
                         ->tooltip('Click to pay via Stripe')
-                ])
                     ->visible(fn($record) => $record->status !== 'paid')
                     ->hidden(fn() => $user->role === 'doctor')
-                    ->label('Make Payment')
                     ->icon('heroicon-m-credit-card')
                     ->size(ActionSize::Small)
-                    ->color('primary')
+                    ->color('blue')
                     ->button(),
-            ])
-            // ->bulkActions([
-            //     Tables\Actions\BulkActionGroup::make([
-            //         Tables\Actions\DeleteBulkAction::make(),
-            //     ]),
-            // ])
-        ;
+            ]);
     }
 
     public static function getRelations(): array
@@ -197,7 +154,6 @@ class PaymentResource extends Resource
         return [
             'index' => Pages\ListPayments::route('/'),
             'stripe' => Pages\PaymentPage::route('/stripe/{record}'),
-
             // 'create' => Pages\CreatePayment::route('/create'),
             // 'stripe' => Pages\StripePayment::route('/stripe/{appointmentId}'),
             // 'view' => Pages\ViewPayment::route('/{record}'),
@@ -205,8 +161,8 @@ class PaymentResource extends Resource
         ];
     }
 
-    // public static function canCreate(): bool
-    // {
-    //     return false;
-    // }
+    public static function canCreate(): bool
+    {
+        return false;
+    }
 }

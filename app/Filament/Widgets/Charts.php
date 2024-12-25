@@ -9,8 +9,11 @@ use Illuminate\Support\Facades\Auth;
 
 class Charts extends ChartWidget
 {
-    protected static ?string $heading = 'Appointment Chart';
-    protected static ?int $sort = 2;
+    protected static ?string $heading = 'Bar Chart - Completed and Missed Appointments';
+    // protected static ?int $sort = 2;
+
+    protected static ?int $sort = 1;
+    // protected int|string|array $columnSpan = '1'; // Adjust column span as needed
 
 /**
      * Determine if the widget should be visible.
@@ -29,42 +32,28 @@ class Charts extends ChartWidget
      */
     public function getAppointmentsData(): array
     {
-        // Get the current year and last year
         $currentYear = Carbon::now()->year;
-        $lastYear = $currentYear - 1;
+        // $year = $year ?? Carbon::now()->year;
 
         // Fetch the number of appointments for each month in the current year
-        $appointmentsThisYear = Appointment::whereYear('appointment_date', $currentYear)
-            ->get()
-            ->groupBy(function ($date) {
-                return Carbon::parse($date->appointment_date)->format('m'); // Group by month
-            });
+        $completedAppointments = Appointment::selectRaw('DATE(appointment_date) as date, COUNT(*) as count')
+        ->where('status','completed')
+            ->groupBy('date')
+            ->orderBy('date')
+            ->take(7)
+            ->pluck('count', 'date');
 
-        // Fetch the number of appointments for each month in the previous year
-        $appointmentsLastYear = Appointment::whereYear('appointment_date', $lastYear)
-            ->get()
-            ->groupBy(function ($date) {
-                return Carbon::parse($date->appointment_date)->format('m'); // Group by month
-            });
+        $missedAppointments = Appointment::selectRaw('DATE(appointment_date) as date, COUNT(*) as count')
+        ->where('status','missed')
+            ->groupBy('date')
+            ->orderBy('date')
+            ->take(7)
+            ->pluck('count', 'date');
 
-        // Prepare data for each dataset
-        $thisYearData = array_fill(0, 12, 0);
-        $lastYearData = array_fill(0, 12, 0);
-
-        // Count appointments for each month in the current year
-        foreach ($appointmentsThisYear as $month => $appointments) {
-            $thisYearData[(int)$month - 1] = $appointments->count();
-        }
-
-        // Count appointments for each month in the previous year
-        foreach ($appointmentsLastYear as $month => $appointments) {
-            $lastYearData[(int)$month - 1] = $appointments->count();
-        }
-
-        return [
-            'thisYear' => $thisYearData,
-            'lastYear' => $lastYearData,
-        ];
+            return [
+                'completedAppointments' => $completedAppointments,
+                'missedAppointments' => $missedAppointments,
+            ];
     }
     /**
      * Prepare data for the chart widget.
@@ -75,35 +64,46 @@ class Charts extends ChartWidget
     {
         $appointmentsData = $this->getAppointmentsData();
 
-        // Get the current year and last year
-        $currentYear = Carbon::now()->year;
-        $lastYear = $currentYear - 1;
 
         return [
             'datasets' => [
                 [
-                    'label' => 'Appointments of ' . $currentYear,
-                    'data' => $appointmentsData['thisYear'],
+                    'label' => 'Completed Appointments',
+                    'data' => $appointmentsData['completedAppointments']->values()->toArray(),
                     'backgroundColor' => '#36A2EB',
                     'borderColor' => '#9BD0F5',
                     'borderWidth' => 2,
                 ],
                 [
-                    'label' => 'Appointments of ' . $lastYear,
-                    'data' => $appointmentsData['lastYear'],
+                    'label' => 'Missed Appointments',
+                    'data' => $appointmentsData['missedAppointments']->values()->toArray(),
                     'backgroundColor' => '#FF6384',
                     'borderColor' => '#FFB1C1',
                     'borderWidth' => 2,
                 ],
             ],
-            'labels' => ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+            'labels' => ['Appointments'], // Single label for the entire dataset
         ];
     }
 
     protected function getType(): string
     {
-        return 'line';
+        return 'bar';
     }
 
-    // protected int | string | array $columnSpan = 'full';
+        /**
+     * Additional styling for the chart.
+     *
+     * @return array
+     */
+    protected function getStyles(): array
+    {
+        return [
+            'chart' => [
+                'width' => '100%',
+                'max-width' => '100%',
+                'height' => '400px',
+            ],
+        ];
+    }
 }

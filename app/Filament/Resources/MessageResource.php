@@ -27,7 +27,7 @@ class MessageResource extends Resource
 {
     protected static ?string $model = Message::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-envelope';
 
     protected static ?string $navigationGroup = 'Appointment Management';
 
@@ -48,7 +48,8 @@ class MessageResource extends Resource
                     ->searchable()
                     ->required()
                     ->placeholder('Select a completed appointment')
-                    ->hidden(fn() => request()->query('appointment_id')),
+                    // ->hidden(fn() => request()->query('appointment_id'))
+                    ,
 
                 Forms\Components\Hidden::make('appointment_id')
                     ->default(fn() => request()->query('appointment_id'))

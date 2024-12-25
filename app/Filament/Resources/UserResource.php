@@ -48,7 +48,6 @@ class UserResource extends Resource
                     Forms\Components\DatePicker::make('dob')
                     ->label('Date of Birth')
                     ->required()
-                    ->native(false)
                     ->displayFormat('d/m/Y'),
                 Forms\Components\Select::make('role')
                     ->required()
@@ -103,7 +102,7 @@ class UserResource extends Resource
                 Tables\Columns\TextColumn::make('address')
                     ->searchable()
                     ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->toggleable(isToggledHiddenByDefault: true) ,
                 Tables\Columns\TextColumn::make('phone')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('created_at')

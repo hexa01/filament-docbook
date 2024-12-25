@@ -12,9 +12,18 @@ use Filament\Pages\Auth\EditProfile as BaseEditProfile;
 
 class EditProfile extends BaseEditProfile
 {
+    protected function getFormActions(): array
+    {
+        return [
+            $this->getSaveFormAction()->label("Update General Information"),
+            $this->getCancelFormAction(),
+        ];
+    }
     protected function getForms(): array
     {
-        $this->maxWidth = 'xxl';
+        // dd($this->Action);
+        $this->maxWidth = '6xl';
+        // dd($this->getSaveFormAction());
         return [
             'form' => $this->form(
                 $this->makeForm()

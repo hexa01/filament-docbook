@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\ScheduleResource\Pages;
 use App\Filament\Resources\ScheduleResource\RelationManagers;
+use App\Models\Appointment;
 use App\Models\Schedule;
 use App\Models\User;
 use Carbon\Carbon;
@@ -28,7 +29,7 @@ class ScheduleResource extends Resource
 {
     protected static ?string $model = Schedule::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-clock';
 
     protected static ?string $navigationLabel = 'Schedules';
     protected static ?string $navigationGroup = 'Schedules Management';
@@ -62,11 +63,13 @@ class ScheduleResource extends Resource
                 Forms\Components\TimePicker::make('start_time')
                     ->label('Select Start Time')
                     ->displayFormat('H:i')
+                    ->seconds(false)
                     ->required(),
                 Forms\Components\TimePicker::make('end_time')
                     ->label('Select End Time')
                     ->required()
                     ->after('start_time')
+                    ->seconds(false)
                     ->rule('after:start_time')
                     ->rule(function (callable $get) {
                         return function ($attribute, $value, $fail) use ($get) {
@@ -88,7 +91,7 @@ class ScheduleResource extends Resource
                     ->label('Doctor Name')
                     ->searchable()
                     ->sortable()
-                    ->hidden(fn()=> Auth::user()->role === 'doctor'),
+                    ->hidden(fn() => Auth::user()->role === 'doctor'),
                 Tables\Columns\TextColumn::make('day')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('start_time'),
@@ -138,54 +141,71 @@ class ScheduleResource extends Resource
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Action::make('updateSchedule')
-                ->label("Edit")
-                ->form([
-                    Forms\Components\TextInput::make('day')
-                    ->label('Day')
-                    ->default(fn($record) => $record->day)
-                    ->required()
-                    ->disabled()
-                    ->readonly(),
-                    Forms\Components\TimePicker::make('start_time')
-                        ->label('Select Start Time')
-                        ->displayFormat('H:i')
-                        ->default(fn($record) => $record->start_time)
-                        ->required(),
-                    Forms\Components\TimePicker::make('end_time')
-                        ->label('Select End Time')
-                        ->required()
-                        ->default(fn($record) => $record->end_time)
-                        ->after('start_time')
-                        ->rule('after:start_time')
-                        ->rule(function (callable $get) {
-                            return function ($attribute, $value, $fail) use ($get) {
-                                $startTime = $get('start_time');
-                                if (strtotime($value) < strtotime('+2 hours', strtotime($startTime))) {
-                                    $fail('End time must be at least 2 hours after the start time.');
-                                }
-                            };
-                        }),
-                ])
-                ->color('yellow')
-                ->icon('heroicon-s-pencil')
-                ->action(function ($record, $data) {
-                    $startTime = Carbon::parse($data['start_time']);
-                    $endTime = Carbon::parse($data['end_time']);
-                    // Calculate the number of 30-minute slots
-                    $slot_count = $startTime->diffInMinutes($endTime) / 30;
-                    $record->update([
-                        'start_time' => $startTime->format('H:i'),  // 24-hour format
-                        'end_time' => $endTime->format('H:i'),      // 24-hour format
-                        'slot_count' => $slot_count,
-                    ]);
+                    ->label("Edit")
+                    ->form([
+                        Forms\Components\TextInput::make('day')
+                            ->label('Day')
+                            ->default(fn($record) => $record->day)
+                            ->required()
+                            ->disabled()
+                            ->readonly(),
+                        Forms\Components\TimePicker::make('start_time')
+                            ->label('Select Start Time')
+                            ->displayFormat('H:i')
+                            ->seconds(false)
+                            ->default(fn($record) => $record->start_time)
+                            ->required(),
+                        Forms\Components\TimePicker::make('end_time')
+                            ->label('Select End Time')
+                            ->required()
+                            ->seconds(false)
+                            ->default(fn($record) => $record->end_time)
+                            ->after('start_time')
+                            ->rule('after:start_time')
+                            ->rule(function (callable $get) {
+                                return function ($attribute, $value, $fail) use ($get) {
+                                    $startTime = $get('start_time');
+                                    if (strtotime($value) < strtotime('+2 hours', strtotime($startTime))) {
+                                        $fail('End time must be at least 2 hours after the start time.');
+                                    }
+                                };
+                            }),
+                    ])
+                    ->color('yellow')
+                    ->icon('heroicon-s-pencil')
+                    ->action(function ($record, $data) {
+                        $startTime = Carbon::parse($data['start_time']);
+                        $endTime = Carbon::parse($data['end_time']);
 
-                    // $text = app(AppointmentService::class)->formatAppointmentAsReadableText($record);
-                    Notification::make()
-                        ->title('Schedule updated')
-                        ->success()
-                        ->body("Schedule updated for $record->day")
-                        ->send();
-                })
+                        $appointment_dates = Appointment::where('doctor_id', $record->doctor_id)->whereDate('appointment_date', '>', now())->distinct()->pluck('appointment_date')->toArray();
+                        $appointment_days = array_map(function ($date) {
+                            return Carbon::parse($date)->englishDayOfWeek;
+                        }, $appointment_dates);
+                        if (in_array($record->day, $appointment_days)) {
+                            Notification::make()
+                                ->danger()
+                                ->title('Schedule not updated')
+                                ->body('You can\'t update schedule for this day.')
+                                ->send();
+                            return redirect()->back();
+                        }
+
+
+                        // Calculate the number of 30-minute slots
+                        $slot_count = $startTime->diffInMinutes($endTime) / 30;
+                        $record->update([
+                            'start_time' => $startTime->format('H:i'),  // 24-hour format
+                            'end_time' => $endTime->format('H:i'),      // 24-hour format
+                            'slot_count' => $slot_count,
+                        ]);
+
+                        // $text = app(AppointmentService::class)->formatAppointmentAsReadableText($record);
+                        Notification::make()
+                            ->title('Schedule updated')
+                            ->success()
+                            ->body("Schedule updated for $record->day")
+                            ->send();
+                    })
             ])
             ->bulkActions([
                 // Bulk Action for updating the status of selected records

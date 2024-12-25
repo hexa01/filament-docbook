@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\UserResource\Pages;
 
 use App\Filament\Resources\UserResource;
+use App\Models\Doctor;
 use App\Models\Specialization;
 use App\Models\User;
 use Filament\Actions;
@@ -11,6 +12,11 @@ use Filament\Resources\Pages\EditRecord;
 class EditUser extends EditRecord
 {
     protected static string $resource = UserResource::class;
+
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('index');
+    }
 
     protected function getHeaderActions(): array
     {
@@ -36,5 +42,20 @@ protected function mutateFormDataBeforeSave(array $data): array
         unset($data['password']);
     }
     return $data;
+}
+
+protected function afterSave(): void
+{
+    $record = $this->record;  // Access the created User model
+    $data = $this->form->getState();
+    $currentEditingUser = User::find($record['id']);
+    if ($currentEditingUser['role'] === 'doctor') {
+        $doctor = Doctor::find($currentEditingUser->doctor->id);
+        $doctor->update([
+            'specialization_id' => $data['specialization_id'],
+            'hourly_rate' => $data['hourly_rate'],
+        ]);
+    // return $data;
+    }
 }
 }

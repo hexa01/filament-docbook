@@ -16,4 +16,5 @@ class ViewPayment extends ViewRecord
             // Actions\EditAction::make(),
         ];
     }
+    
 }

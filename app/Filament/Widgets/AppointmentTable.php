@@ -29,22 +29,22 @@ class AppointmentTable extends BaseWidget
 
         // Base query to filter appointments within the next week
         $query = Appointment::query()
-            ->whereBetween('appointment_date', [$today, $nextMonth])
-            ->whereIn('status', ['booked', 'pending']);
+            ->whereBetween('appointment_date', [$today, $nextMonth]);
 
         // If the user is an admin, show all appointments
         if ($user->hasRole('admin')) {
+            $query->whereIn('status', ['booked', 'pending']);
             // No additional filtering needed for admins
         }
 
         // If the user is a doctor, filter appointments where the doctor is associated
         elseif ($user->hasRole('doctor')) {
-            $query->where('doctor_id', $user->doctor->id);  // Assuming the user has a `doctor` relationship
+            $query->where('doctor_id', $user->doctor->id)->where('status','booked');  // Assuming the user has a `doctor` relationship
         }
 
         // If the user is a patient, filter appointments where the patient is associated
         elseif ($user->hasRole('patient')) {
-            $query->where('patient_id', $user->patient->id);  // Assuming the user has a `patient` relationship
+            $query->where('patient_id', $user->patient->id)->whereIn('status', ['booked', 'pending']);  // Assuming the user has a `patient` relationship
         }
 
 
@@ -59,7 +59,15 @@ class AppointmentTable extends BaseWidget
                 TextColumn::make('appointment_date')
                 ->label('Appointment Date'),
                 TextColumn::make('slot'),
-                TextColumn::make('status'),
+                TextColumn::make('status')
+                ->badge()
+                ->color(fn(string $state): string => match ($state) {
+                    'completed' => 'success',
+                    'pending' => 'warning',
+                    'missed' => 'danger',
+                    'booked' => 'yellow',
+                    default => 'secondary'
+                }),
             ]);
     }
 }
