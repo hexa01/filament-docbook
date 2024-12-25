@@ -15,7 +15,6 @@ use Filament\Resources\Pages\ListRecords;
 use Filament\Support\Enums\ActionSize;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\ActionGroup;
-use Filament\Tables\Actions\BulkAction;
 use Filament\Tables\Actions\DeleteAction;
 use Filament\Tables\Actions\EditAction;
 use Filament\Tables\Actions\ViewAction;
@@ -58,15 +57,15 @@ class ListAppointments extends ListRecords
                 TextColumn::make('slot')
                     ->label("Slot"),
                 TextColumn::make('status')
-                ->badge()
-                ->color(fn(string $state): string => match ($state) {
-                    'completed' => 'success',
-                    'pending' => 'warning',
-                    'missed' => 'danger',
-                    'booked' => 'yellow',
-                    default => 'secondary'
-                })
-                ->searchable(),
+                    ->badge()
+                    ->color(fn(string $state): string => match ($state) {
+                        'completed' => 'success',
+                        'pending' => 'warning',
+                        'missed' => 'danger',
+                        'booked' => 'yellow',
+                        default => 'secondary'
+                    })
+                    ->searchable(),
                 // TextColumn::make('payment.status')
                 //     ->label('Payment Status')
                 //     ->badge()
@@ -84,7 +83,17 @@ class ListAppointments extends ListRecords
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-            ])->defaultSort('status','asc')->defaultSort('appointment_date','asc')
+            ])->defaultSort(function ($query) {
+                $query->orderByRaw("
+                    CASE
+                        WHEN status = 'pending' THEN 1
+                        WHEN status = 'booked' THEN 2
+                        WHEN status = 'completed' THEN 3
+                        WHEN status = 'missed' THEN 4
+                        ELSE 5
+                    END
+                ");
+            })
             ->modifyQueryUsing(function (Builder $query) {
                 // Get the currently authenticated user
                 $user = User::find(Auth::user()->id);
@@ -146,17 +155,19 @@ class ListAppointments extends ListRecords
 
                 ActionGroup::make([
                     ViewAction::make()
-                    ->label('View Appointment'),
+                        ->label('View Appointment')
+                        ->color('viewButton'),
                     Action::make('markCompleted')
                         ->label('Mark as Completed')
                         ->icon('heroicon-s-check-circle')
                         // ->hidden(fn() => $user->role === 'patient')
                         ->requiresConfirmation()
-                        ->hidden(fn($record) => $record->status === 'completed' ||
-                            $record->status === 'missed'
-                            || Carbon::parse($record->appointment_date)->isFuture()
-                            || $user->role === 'patient'
-                            )
+                        ->hidden(
+                            fn($record) => $record->status === 'completed' ||
+                                $record->status === 'missed'
+                                || Carbon::parse($record->appointment_date)->isFuture()
+                                || $user->role === 'patient'
+                        )
                         ->color(function ($record) {
                             if (
                                 $record->status === 'completed' || $record->status === 'missed'
@@ -180,11 +191,12 @@ class ListAppointments extends ListRecords
                         ->icon('heroicon-s-x-circle')
                         ->requiresConfirmation()
                         // ->hidden(fn() => $user->role === 'patient')
-                        ->hidden(fn($record) => $record->status === 'completed' ||
-                            $record->status === 'missed' ||
-                            Carbon::parse($record->appointment_date)->isFuture()
-                            || $user->role === 'patient'
-                            )
+                        ->hidden(
+                            fn($record) => $record->status === 'completed' ||
+                                $record->status === 'missed' ||
+                                Carbon::parse($record->appointment_date)->isFuture()
+                                || $user->role === 'patient'
+                        )
                         ->action(function ($record) {
                             $record->update(['status' => 'missed']);
                             $text = app(AppointmentService::class)->formatAppointmentAsReadableText($record);
@@ -195,19 +207,21 @@ class ListAppointments extends ListRecords
                                 ->send();
                         })
                         ->color(function ($record) {
-                            if ($record->status === 'completed' || $record->status === 'missed' ||
-                            Carbon::parse($record->appointment_date)->isFuture()) {
+                            if (
+                                $record->status === 'completed' || $record->status === 'missed' ||
+                                Carbon::parse($record->appointment_date)->isFuture()
+                            ) {
                                 return 'gray';
                             }
                             return 'danger';
                         }),
                     EditAction::make()
-                        ->disabled(function ($record) {
-                            return (Auth::user()->role === 'admin' && $record->status === 'completed') ||
+                        ->hidden(function ($record) {
+                            return (Auth::user()->role === 'admin' && ($record->status === 'completed' || $record->status === 'missed')) ||
                                 (Auth::user()->role === 'patient' && $record->status !== 'pending');
                         })
                         ->color(function ($record) {
-                            if ((Auth::user()->role === 'admin' && $record->status === 'completed') ||
+                            if ((Auth::user()->role === 'admin' && ($record->status === 'completed' || $record->status === 'missed')) ||
                                 (Auth::user()->role === 'patient' && $record->status !== 'pending')
                             ) {
                                 return 'gray';
@@ -219,12 +233,12 @@ class ListAppointments extends ListRecords
                         ->label('Edit Appointment'),
                     DeleteAction::make()
                         ->label('Delete Appointment')
-                        ->disabled(function ($record) {
-                            return (Auth::user()->role === 'admin' && $record->status === 'completed') ||
+                        ->hidden(function ($record) {
+                            return (Auth::user()->role === 'admin' && ($record->status === 'completed' || $record->status === 'missed')) ||
                                 (Auth::user()->role === 'patient' && $record->status !== 'pending');
                         })
                         ->before(function ($record, DeleteAction $action) {
-                            if (Auth::user()->role === 'admin' && $record->status === 'completed') {
+                            if (Auth::user()->role === 'admin' && ($record->status === 'completed' || $record->status === 'missed')) {
                                 Notification::make()
                                     ->danger()
                                     ->title('Appointment not deleted')
@@ -249,56 +263,24 @@ class ListAppointments extends ListRecords
                                 ->body("$text has been removed.");
                         }),
                 ])
-
                     ->tooltip('More Actions')
                     ->label('Actions')
                     ->icon('heroicon-s-cog')
                     ->size(ActionSize::Small)
-                    ->color('purple')
-                ->button()
-            ])
-            // ->bulkActions([
-            //     BulkAction::make('markCompleted')
-            //         ->label('Mark as Completed')
-            //         ->color('success')
-            //         ->icon('heroicon-s-check-circle')
-            //         ->action(function (array $records) {
-            //             foreach ($records as $record) {
-            //                 // Update each record to "completed"
-            //                 $record->update(['status' => 'completed']);
-            //             }
-            //             Notification::make()
-            //                 ->title('Appointments Status Updated')
-            //                 ->success()
-            //                 ->body("Selected Appointments have been marked as completed.")
-            //                 ->send();
-            //         }),
-            //     BulkAction::make('markMissed')
-            //         ->label('Mark as Missed')
-            //         ->color('danger')
-            //         ->icon('heroicon-s-x-circle')
-            //         ->action(function (array $records) {
-            //             foreach ($records as $record) {
-            //                 // Update each record to "missed"
-            //                 $record->update(['status' => 'missed']);
-            //             }
-
-            //             // Send notification after updating statuses
-            //             Notification::make()
-            //                 ->title('Appointments Status Updated')
-            //                 ->success()
-            //                 ->body("Selected Appointments have been marked as missed.")
-            //                 ->send();
-            //         }),
-
-            // ]),
-            ;
+                    ->color('action')
+                    ->button()
+            ]);
     }
 
     public function getTabs(): array
     {
         // Get the currently authenticated user
         $user = Auth::user();
+        $all = 0;
+        $booked = 0;
+        $pending = 0;
+        $completed = 0;
+        $missed = 0;
 
         // Initialize the tabs array
         $tabs = [];
@@ -306,91 +288,74 @@ class ListAppointments extends ListRecords
         if ($user->role == 'doctor') {
             // Get the doctor's ID based on the user
             $doctorId = $user->doctor->id;
-
-            // Define tabs for doctor
-            $tabs = [
-                'All' => Tab::make()
-                    ->badge(Appointment::where('doctor_id', $doctorId)->count())
-                    ->icon('heroicon-s-ellipsis-horizontal-circle'),
-
-                'Booked' => Tab::make()
-                    ->modifyQueryUsing(fn(Builder $query) => $query->where('doctor_id', $doctorId)->where('status', 'booked'))
-                    ->badge(Appointment::where('doctor_id', $doctorId)->where('status', 'booked')->count())
-                    ->icon('heroicon-s-calendar'),
-
-                'Completed' => Tab::make()
-                    ->modifyQueryUsing(fn(Builder $query) => $query->where('doctor_id', $doctorId)->where('status', 'completed'))
-                    ->badge(Appointment::where('doctor_id', $doctorId)->where('status', 'completed')->count())
-                    ->icon('heroicon-s-check-circle'),
-
-                'Missed' => Tab::make()
-                    ->modifyQueryUsing(fn(Builder $query) => $query->where('doctor_id', $doctorId)->where('status', 'missed'))
-                    ->badge(Appointment::where('doctor_id', $doctorId)->where('status', 'missed')->count())
-                    ->icon('heroicon-s-x-circle'),
-            ];
+            $all = Appointment::where('doctor_id', $doctorId)->where('status', '!=', 'pending')->count();
+            $booked = Appointment::where('doctor_id', $doctorId)->where('status', 'booked')->count();
+            $completed = Appointment::where('doctor_id', $doctorId)->where('status', 'completed')->count();
+            $missed = Appointment::where('doctor_id', $doctorId)->where('status', 'missed')->count();
         } elseif ($user->role == 'patient') {
             // Get the patient's ID based on the user
             $patientId = $user->patient->id;
-
-            // Define tabs for patient
-            $tabs = [
-                'All' => Tab::make()
-                    ->badge(Appointment::where('patient_id', $patientId)->count())
-                    ->icon('heroicon-s-ellipsis-horizontal-circle'),
-
-                'Pending' => Tab::make()
-                    ->modifyQueryUsing(fn(Builder $query) => $query->where('patient_id', $patientId)->where('status', 'pending'))
-                    ->badge(Appointment::where('patient_id', $patientId)->where('status', 'pending')->count())
-                    ->icon('heroicon-s-clock'),
-
-                'Booked' => Tab::make()
-                    ->modifyQueryUsing(fn(Builder $query) => $query->where('patient_id', $patientId)->where('status', 'booked'))
-                    ->badge(Appointment::where('patient_id', $patientId)->where('status', 'booked')->count())
-                    ->icon('heroicon-s-calendar'),
-
-                'Completed' => Tab::make()
-                    ->modifyQueryUsing(fn(Builder $query) => $query->where('patient_id', $patientId)->where('status', 'completed'))
-                    ->badge(Appointment::where('patient_id', $patientId)->where('status', 'completed')->count())
-                    ->icon('heroicon-s-check-circle'),
-
-                'Missed' => Tab::make()
-                    ->modifyQueryUsing(fn(Builder $query) => $query->where('patient_id', $patientId)->where('status', 'missed'))
-                    ->badge(Appointment::where('patient_id', $patientId)->where('status', 'missed')->count())
-                    ->icon('heroicon-s-x-circle'),
-
-
-            ];
+            $all = Appointment::where('patient_id', $patientId)->count();
+            $booked = Appointment::where('patient_id', $patientId)->where('status', 'booked')->count();
+            $completed = Appointment::where('patient_id', $patientId)->where('status', 'completed')->count();
+            $pending = Appointment::where('patient_id', $patientId)->where('status', 'pending')->count();
+            $missed = Appointment::where('patient_id', $patientId)->where('status', 'missed')->count();
         } elseif ($user->role == 'admin') {
-            // Admin can see all appointments
+            $all = Appointment::count();
+            $booked = Appointment::where('status', 'booked')->count();
+            $completed = Appointment::where('status', 'completed')->count();
+            $pending = Appointment::where('status', 'pending')->count();
+            $missed = Appointment::where('status', 'missed')->count();
+        }
+
+        if ($user->role != 'doctor') {
             $tabs = [
                 'All' => Tab::make()
-                    ->badge(Appointment::count())
+                    ->badge($all)
                     ->icon('heroicon-s-ellipsis-horizontal-circle'),
 
                 'Pending' => Tab::make()
                     ->modifyQueryUsing(fn(Builder $query) => $query->where('status', 'pending'))
-                    ->badge(Appointment::where('status', 'pending')->count())
-                    ->icon('heroicon-s-clock'),
+                    ->badge($pending)
+                    ->icon('heroicon-s-calendar'),
 
                 'Booked' => Tab::make()
                     ->modifyQueryUsing(fn(Builder $query) => $query->where('status', 'booked'))
-                    ->badge(Appointment::where('status', 'booked')->count())
+                    ->badge($booked)
                     ->icon('heroicon-s-calendar'),
 
                 'Completed' => Tab::make()
                     ->modifyQueryUsing(fn(Builder $query) => $query->where('status', 'completed'))
-                    ->badge(Appointment::where('status', 'completed')->count())
+                    ->badge($completed)
                     ->icon('heroicon-s-check-circle'),
-
-
 
                 'Missed' => Tab::make()
                     ->modifyQueryUsing(fn(Builder $query) => $query->where('status', 'missed'))
-                    ->badge(Appointment::where('status', 'missed')->count())
+                    ->badge($missed)
+                    ->icon('heroicon-s-x-circle'),
+            ];
+        } else {
+            $tabs = [
+                'All' => Tab::make()
+                    ->badge($all)
+                    ->icon('heroicon-s-ellipsis-horizontal-circle'),
+
+                'Booked' => Tab::make()
+                    ->modifyQueryUsing(fn(Builder $query) => $query->where('status', 'booked'))
+                    ->badge($booked)
+                    ->icon('heroicon-s-calendar'),
+
+                'Completed' => Tab::make()
+                    ->modifyQueryUsing(fn(Builder $query) => $query->where('status', 'completed'))
+                    ->badge($completed)
+                    ->icon('heroicon-s-check-circle'),
+
+                'Missed' => Tab::make()
+                    ->modifyQueryUsing(fn(Builder $query) => $query->where('status', 'missed'))
+                    ->badge($missed)
                     ->icon('heroicon-s-x-circle'),
             ];
         }
-
         return $tabs;
     }
 }

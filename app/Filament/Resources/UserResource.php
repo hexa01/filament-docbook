@@ -12,8 +12,13 @@ use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Form;
+use Filament\Infolists\Components\Section;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Infolist;
 use Filament\Resources\Resource;
+use Filament\Support\Enums\ActionSize;
 use Filament\Tables;
+use Filament\Tables\Actions\ActionGroup;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -147,14 +152,55 @@ class UserResource extends Resource
 
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
+                ActionGroup::make([
+                    Tables\Actions\ViewAction::make()
+                    ->label('View User Information')
+                    ->color('viewButton'),
+                    Tables\Actions\EditAction::make()
+                    ->label('Edit User Information')
+                    ->color('yellow'),
+                    ])
+                    ->tooltip('More Actions')
+                    ->label('Actions')
+                    ->icon('heroicon-s-cog')
+                    ->size(ActionSize::Small)
+                    ->color('action')
+                    ->button(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
+    }
+
+    public static function infolist(Infolist $infolist): Infolist
+    {
+        return $infolist
+            ->schema([
+                Section::make('User\'s Basic Information')
+                    ->description('Information about the User')
+                    ->schema([
+                        TextEntry::make('name'),
+                        TextEntry::make('email'),
+                        TextEntry::make('gender'),
+                        TextEntry::make('dob'),
+                        TextEntry::make('role'),
+
+                    ])->columns(2),
+                    Section::make('User\'s Basic Information')
+                    ->description('Information about the User')
+                    ->schema([
+                        TextEntry::make('name'),
+                        TextEntry::make('email'),
+                        TextEntry::make('gender'),
+                        TextEntry::make('dob'),
+                        TextEntry::make('role'),
+
+                    ]),
+
+
+                    ]);
     }
 
     public static function getRelations(): array
@@ -169,6 +215,7 @@ class UserResource extends Resource
         return [
             'index' => Pages\ListUsers::route('/'),
             'create' => Pages\CreateUser::route('/create'),
+            'view' => Pages\ViewUser::route('/{record}'),
             'edit' => Pages\EditUser::route('/{record}/edit'),
         ];
     }

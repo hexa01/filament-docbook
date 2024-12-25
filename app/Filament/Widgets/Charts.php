@@ -32,7 +32,7 @@ class Charts extends ChartWidget
      */
     public function getAppointmentsData(): array
     {
-        $currentYear = Carbon::now()->year;
+        // $currentYear = Carbon::now()->year;
         // $year = $year ?? Carbon::now()->year;
 
         // Fetch the number of appointments for each month in the current year
@@ -62,27 +62,44 @@ class Charts extends ChartWidget
      */
     protected function getData(): array
     {
-        $appointmentsData = $this->getAppointmentsData();
+        // Get completed appointments grouped by month
+        $completedAppointments = Appointment::selectRaw('strftime("%Y-%m", appointment_date) as month, COUNT(*) as count')
+            ->where('status', 'completed')
+            ->groupBy('month')
+            ->orderBy('month')
+            ->pluck('count', 'month');
 
+        // Get missed appointments grouped by month
+        $missedAppointments = Appointment::selectRaw('strftime("%Y-%m", appointment_date) as month, COUNT(*) as count')
+            ->where('status', 'missed')
+            ->groupBy('month')
+            ->orderBy('month')
+            ->pluck('count', 'month');
+
+        // Merge and ensure both datasets have the same months
+        $allMonths = $completedAppointments->keys()->merge($missedAppointments->keys())->unique()->sort();
+
+        $completedData = $allMonths->map(fn($month) => $completedAppointments->get($month, 0))->toArray();
+        $missedData = $allMonths->map(fn($month) => $missedAppointments->get($month, 0))->toArray();
 
         return [
             'datasets' => [
                 [
                     'label' => 'Completed Appointments',
-                    'data' => $appointmentsData['completedAppointments']->values()->toArray(),
+                    'data' => $completedData,
                     'backgroundColor' => '#36A2EB',
                     'borderColor' => '#9BD0F5',
                     'borderWidth' => 2,
                 ],
                 [
                     'label' => 'Missed Appointments',
-                    'data' => $appointmentsData['missedAppointments']->values()->toArray(),
+                    'data' => $missedData,
                     'backgroundColor' => '#FF6384',
                     'borderColor' => '#FFB1C1',
                     'borderWidth' => 2,
                 ],
             ],
-            'labels' => ['Appointments'], // Single label for the entire dataset
+            'labels' => $allMonths->map(fn($month) => date('F Y', strtotime($month)))->toArray(), // Month labels (e.g., "January 2024")
         ];
     }
 
@@ -90,6 +107,7 @@ class Charts extends ChartWidget
     {
         return 'bar';
     }
+
 
         /**
      * Additional styling for the chart.

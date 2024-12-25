@@ -16,8 +16,10 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Support\Enums\ActionSize;
 use Filament\Tables;
 use Filament\Tables\Actions\Action;
+use Filament\Tables\Actions\ActionGroup;
 use Filament\Tables\Actions\BulkAction;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -139,74 +141,85 @@ class ScheduleResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Action::make('updateSchedule')
-                    ->label("Edit")
-                    ->form([
-                        Forms\Components\TextInput::make('day')
-                            ->label('Day')
-                            ->default(fn($record) => $record->day)
-                            ->required()
-                            ->disabled()
-                            ->readonly(),
-                        Forms\Components\TimePicker::make('start_time')
-                            ->label('Select Start Time')
-                            ->displayFormat('H:i')
-                            ->seconds(false)
-                            ->default(fn($record) => $record->start_time)
-                            ->required(),
-                        Forms\Components\TimePicker::make('end_time')
-                            ->label('Select End Time')
-                            ->required()
-                            ->seconds(false)
-                            ->default(fn($record) => $record->end_time)
-                            ->after('start_time')
-                            ->rule('after:start_time')
-                            ->rule(function (callable $get) {
-                                return function ($attribute, $value, $fail) use ($get) {
-                                    $startTime = $get('start_time');
-                                    if (strtotime($value) < strtotime('+2 hours', strtotime($startTime))) {
-                                        $fail('End time must be at least 2 hours after the start time.');
-                                    }
-                                };
-                            }),
-                    ])
-                    ->color('yellow')
-                    ->icon('heroicon-s-pencil')
-                    ->action(function ($record, $data) {
-                        $startTime = Carbon::parse($data['start_time']);
-                        $endTime = Carbon::parse($data['end_time']);
+                ActionGroup::make([
+                    Tables\Actions\ViewAction::make()
+                    ->label('View Schedule')
+                    ->color('viewButton'),
+                    Action::make('updateSchedule')
+                        ->label("Edit Schedule")
+                        ->form([
+                            Forms\Components\TextInput::make('day')
+                                ->label('Day')
+                                ->default(fn($record) => $record->day)
+                                ->required()
+                                ->disabled()
+                                ->readonly(),
+                            Forms\Components\TimePicker::make('start_time')
+                                ->label('Select Start Time')
+                                ->displayFormat('H:i')
+                                ->seconds(false)
+                                ->default(fn($record) => $record->start_time)
+                                ->required(),
+                            Forms\Components\TimePicker::make('end_time')
+                                ->label('Select End Time')
+                                ->required()
+                                ->seconds(false)
+                                ->default(fn($record) => $record->end_time)
+                                ->after('start_time')
+                                ->rule('after:start_time')
+                                ->rule(function (callable $get) {
+                                    return function ($attribute, $value, $fail) use ($get) {
+                                        $startTime = $get('start_time');
+                                        if (strtotime($value) < strtotime('+2 hours', strtotime($startTime))) {
+                                            $fail('End time must be at least 2 hours after the start time.');
+                                        }
+                                    };
+                                }),
+                        ])
+                        ->color('yellow')
+                        ->icon('heroicon-m-pencil-square')
+                        ->action(function ($record, $data) {
+                            $startTime = Carbon::parse($data['start_time']);
+                            $endTime = Carbon::parse($data['end_time']);
 
-                        $appointment_dates = Appointment::where('doctor_id', $record->doctor_id)->whereDate('appointment_date', '>', now())->distinct()->pluck('appointment_date')->toArray();
-                        $appointment_days = array_map(function ($date) {
-                            return Carbon::parse($date)->englishDayOfWeek;
-                        }, $appointment_dates);
-                        if (in_array($record->day, $appointment_days)) {
+                            $appointment_dates = Appointment::where('doctor_id', $record->doctor_id)->whereDate('appointment_date', '>', now())->distinct()->pluck('appointment_date')->toArray();
+                            $appointment_days = array_map(function ($date) {
+                                return Carbon::parse($date)->englishDayOfWeek;
+                            }, $appointment_dates);
+                            if (in_array($record->day, $appointment_days)) {
+                                Notification::make()
+                                    ->danger()
+                                    ->title('Schedule not updated')
+                                    ->body('You can\'t update schedule for this day.')
+                                    ->send();
+                                return redirect()->back();
+                            }
+
+
+                            // Calculate the number of 30-minute slots
+                            $slot_count = $startTime->diffInMinutes($endTime) / 30;
+                            $record->update([
+                                'start_time' => $startTime->format('H:i'),  // 24-hour format
+                                'end_time' => $endTime->format('H:i'),      // 24-hour format
+                                'slot_count' => $slot_count,
+                            ]);
+
+                            // $text = app(AppointmentService::class)->formatAppointmentAsReadableText($record);
                             Notification::make()
-                                ->danger()
-                                ->title('Schedule not updated')
-                                ->body('You can\'t update schedule for this day.')
+                                ->title('Schedule updated')
+                                ->success()
+                                ->body("Schedule updated for $record->day")
                                 ->send();
-                            return redirect()->back();
-                        }
-
-
-                        // Calculate the number of 30-minute slots
-                        $slot_count = $startTime->diffInMinutes($endTime) / 30;
-                        $record->update([
-                            'start_time' => $startTime->format('H:i'),  // 24-hour format
-                            'end_time' => $endTime->format('H:i'),      // 24-hour format
-                            'slot_count' => $slot_count,
-                        ]);
-
-                        // $text = app(AppointmentService::class)->formatAppointmentAsReadableText($record);
-                        Notification::make()
-                            ->title('Schedule updated')
-                            ->success()
-                            ->body("Schedule updated for $record->day")
-                            ->send();
-                    })
+                        })
+                ])
+                ->tooltip('More Actions')
+                ->label('Actions')
+                ->icon('heroicon-s-cog')
+                ->size(ActionSize::Small)
+                ->color('action')
+                ->button()
             ])
+
             ->bulkActions([
                 // Bulk Action for updating the status of selected records
                 BulkAction::make('updateScheduleBulk')

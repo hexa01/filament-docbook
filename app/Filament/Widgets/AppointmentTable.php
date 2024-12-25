@@ -55,7 +55,8 @@ class AppointmentTable extends BaseWidget
                     ->label('Patient Name')
                     ->searchable(),
                 TextColumn::make('doctor.user.name')
-                    ->label('Doctor Name'),
+                    ->label('Doctor Name')
+                    ->hidden(fn() => $user->role === 'doctor'),
                 TextColumn::make('appointment_date')
                 ->label('Appointment Date'),
                 TextColumn::make('slot'),
@@ -68,6 +69,17 @@ class AppointmentTable extends BaseWidget
                     'booked' => 'yellow',
                     default => 'secondary'
                 }),
-            ]);
+            ])->defaultSort(function ($query) {
+                $query->orderByRaw("
+                    CASE
+                        WHEN status = 'pending' THEN 1
+                        WHEN status = 'booked' THEN 2
+                        WHEN status = 'completed' THEN 3
+                        WHEN status = 'missed' THEN 4
+                        ELSE 5
+                    END
+                ");
+            })
+            ;
     }
 }

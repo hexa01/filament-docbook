@@ -16,8 +16,10 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Support\Enums\ActionSize;
 use Filament\Tables;
 use Filament\Tables\Actions\Action as Action;
+use Filament\Tables\Actions\ActionGroup;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -133,10 +135,13 @@ class MessageResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
+                ActionGroup::make([
+                Tables\Actions\ViewAction::make()
+                ->label('View Messsage')
+                ->color('viewButton'),
                 Action::make('updateMessage')
                 ->hidden(fn()=>Auth::user()->role === 'patient')
-                    ->label("Edit")
+                    ->label("Edit Message")
                     ->form([
                         TextInput::make('doctor_message')
                             ->default(fn($record) => $record->doctor_message)
@@ -144,7 +149,7 @@ class MessageResource extends Resource
                             ->required()
                     ])
                     ->color('yellow')
-                    ->icon('heroicon-s-pencil')
+                    ->icon('heroicon-m-pencil-square')
                     ->action(function ($record, $data) {
                         $record->update([
                             'doctor_message' => $data['doctor_message'],
@@ -154,13 +159,17 @@ class MessageResource extends Resource
                             ->title('Message updated')
                             ->success()
                             ->send();
-                    }),
-            ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    // Tables\Actions\DeleteBulkAction::make(),
-                ]),
-            ]);
+                    })
+                ])
+                ->tooltip('More Actions')
+                ->label('Actions')
+                ->icon('heroicon-s-cog')
+                ->size(ActionSize::Small)
+                ->color('action')
+                ->button(),
+                ])
+
+;
     }
 
     public static function getRelations(): array

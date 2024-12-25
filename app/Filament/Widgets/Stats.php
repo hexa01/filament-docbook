@@ -26,7 +26,7 @@ class Stats extends BaseWidget
             ->distinct('doctor_id')->count();
 
         if ($user->role === 'admin') {
-            $completed_appointments = Appointment::where('appointment_date', '>=', Carbon::parse(now()))->where('status', 'completed')->get();
+            $completed_appointments = Appointment::where('status', 'completed')->get();
             $upcoming_booked_appointments = Appointment::where('appointment_date', '>=', Carbon::parse(now()))->where('status', 'booked')->get();
             $statsToDisplay[] =   Stat::make('Total Patients', Patient::count())
                 ->description(Patient::count() . ' registered patients')
@@ -38,12 +38,12 @@ class Stats extends BaseWidget
                 ]);
 
             $statsToDisplay[] = Stat::make('Total Doctors', Doctor::count())
-                ->description(Doctor::count() . ' active doctors')
+                ->description(Doctor::count() . ' registered doctors')
                 ->descriptionIcon('heroicon-o-briefcase')
                 ->color('warning')
                 ->url(route('filament.admin.resources.users.index') . '?activeTab=Doctors');
         } elseif ($user->role === 'patient') {
-            $completed_appointments = Appointment::where('appointment_date', '>=', Carbon::parse(now()))->where('status', 'completed')->where('patient_id', $user->patient->id)->get();
+            $completed_appointments = Appointment::where('status', 'completed')->where('patient_id', $user->patient->id)->get();
             $upcoming_booked_appointments = Appointment::where('appointment_date', '>=', Carbon::parse(now()))->where('status', 'booked')->where('patient_id', $user->patient->id)->get();
             $statsToDisplay[] =
                 Stat::make('Specializations', Specialization::all()->count())
@@ -52,7 +52,7 @@ class Stats extends BaseWidget
                 ->color('primary')
                 ->url(route('filament.admin.resources.specializations.index'));
         } elseif ($user->role === 'doctor') {
-            $completed_appointments = Appointment::where('appointment_date', '>=', Carbon::parse(now()))->where('status', 'completed')->where('doctor_id', $user->doctor->id)->get();
+            $completed_appointments = Appointment::where('status', 'completed')->where('doctor_id', $user->doctor->id)->get();
             $upcoming_booked_appointments = Appointment::where('appointment_date', '>=', Carbon::parse(now()))->where('status', 'booked')->where('doctor_id', $user->doctor->id)->get();
 
         }

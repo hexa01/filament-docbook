@@ -91,6 +91,7 @@ class PaymentPage extends Page
                 ->title('Success Payment')
                 ->body("Payment success: $text")
                 ->danger()
+                ->icon('heroicon-o-banknotes')
                 ->send();
             // Return with success notification
             return redirect()->route('filament.admin.resources.payments.index')->with('success', 'Payment successfully done!');
