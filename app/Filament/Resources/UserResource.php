@@ -12,6 +12,7 @@ use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Form;
+use Filament\Infolists\Components\Grid;
 use Filament\Infolists\Components\Section;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Infolist;
@@ -176,32 +177,43 @@ class UserResource extends Resource
 
     public static function infolist(Infolist $infolist): Infolist
     {
-        return $infolist
-            ->schema([
-                Section::make('User\'s Basic Information')
-                    ->description('Information about the User')
-                    ->schema([
-                        TextEntry::make('name'),
-                        TextEntry::make('email'),
-                        TextEntry::make('gender'),
-                        TextEntry::make('dob'),
-                        TextEntry::make('role'),
+        return $infolist->schema([
+            Section::make()
+                ->schema([
+                    Section::make("User's Basic Information")
+                        ->description('Basic details about the user.')
+                        ->schema([
+                            TextEntry::make('name')->label('Full Name'),
+                            TextEntry::make('dob')->label('Date of Birth'),
+                            TextEntry::make('gender')->label('Gender'),
+                            // TextEntry::make('role')->label('User Role'),
+                        ])->columns(3),
 
-                    ])->columns(2),
-                    Section::make('User\'s Basic Information')
-                    ->description('Information about the User')
-                    ->schema([
-                        TextEntry::make('name'),
-                        TextEntry::make('email'),
-                        TextEntry::make('gender'),
-                        TextEntry::make('dob'),
-                        TextEntry::make('role'),
+                    Section::make('Contact Information')
+                        ->description('Reach out to the user via the details below.')
+                        ->schema([
+                            TextEntry::make('email')->label('Email Address'),
+                            TextEntry::make('phone')->label('Phone Number'),
+                        ])->columns(2), // Stack fields vertically in this section
+                ])->columns(2),
 
-                    ]),
-
-
-                    ]);
+            Section::make('Professional Details')
+                ->description('Relevant information for doctors.')
+                ->schema([
+                    TextEntry::make('doctor.specialization.name')
+                        ->label('Specialization')
+                        // ->visible(fn($record) => $record->role === 'doctor')
+                        ,
+                    TextEntry::make('doctor.hourly_rate')
+                        ->label('Hourly Rate ($)')
+                        // ->visible(fn($record) => $record->role === 'doctor')
+                        ,
+                ])
+                ->visible(fn($record) => $record->role === 'doctor')
+                ->columns(2),
+        ]);
     }
+
 
     public static function getRelations(): array
     {
