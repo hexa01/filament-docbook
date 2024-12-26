@@ -55,10 +55,8 @@ class Register extends BaseRegister
         $data = $this->data;
             $patient = Patient::create([
                 'user_id' => $user->id,
-                'gender' => $data['gender'],
-                'dob' => $data['dob'],
             ]);
 
-        
+
     }
 }
