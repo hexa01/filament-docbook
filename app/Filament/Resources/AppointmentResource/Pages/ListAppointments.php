@@ -110,14 +110,8 @@ class ListAppointments extends ListRecords
 
                 // If the user is a patient, only their appointments are shown
                 if ($user->hasRole('patient')) {
-
-                    if ($user->patient) {
-                        return $query->where('patient_id', $user->patient->id);
-                    } else {
-                        return $query->whereRaw('1 = 0'); // If no patient relationship, show no appointments
-                    }
+                    return $query->where('patient_id', $user->patient->id);
                 }
-
                 //default
                 return $query->whereRaw('1 = 0');
             })
@@ -154,9 +148,6 @@ class ListAppointments extends ListRecords
             ->actions([
 
                 ActionGroup::make([
-                    ViewAction::make()
-                        ->label('View Appointment')
-                        ->color('viewButton'),
                     Action::make('markCompleted')
                         ->label('Mark as Completed')
                         ->icon('heroicon-s-check-circle')
@@ -215,6 +206,9 @@ class ListAppointments extends ListRecords
                             }
                             return 'danger';
                         }),
+                        ViewAction::make()
+                        ->label('View Appointment')
+                        ->color('viewButton'),
                     EditAction::make()
                         ->hidden(function ($record) {
                             return (Auth::user()->role === 'admin' && ($record->status === 'completed' || $record->status === 'missed')) ||

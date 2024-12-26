@@ -64,7 +64,7 @@ class Stats extends BaseWidget
             ->color('success')
             ->url(route('filament.admin.resources.appointments.index') . '?activeTab=Completed');
 
-        $statsToDisplay[] =  Stat::make('Booked Appointments', $upcoming_booked_appointments->count())
+        $statsToDisplay[] =  Stat::make('Upcoming Booked Appointments', $upcoming_booked_appointments->count())
             ->description($upcoming_booked_appointments->count() . ' booked')
             ->descriptionIcon('heroicon-o-calendar')
             ->color('info')

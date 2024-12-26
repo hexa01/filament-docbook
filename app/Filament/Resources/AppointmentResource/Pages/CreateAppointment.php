@@ -22,6 +22,7 @@ class CreateAppointment extends CreateRecord
     {
         return $this->getResource()::getUrl('index');
     }
+    
 
     protected function getCreatedNotification(): Notification
     {

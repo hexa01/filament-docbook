@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Filament\Widgets;
 
 use App\Models\Payment;
@@ -9,10 +8,10 @@ use Illuminate\Support\Facades\Auth;
 
 class PaymentChart extends ChartWidget
 {
-    protected static ?string $heading = 'Payment Stats';
+    protected static ?string $heading = 'Revenue Generated (2 Years)';
     protected static ?int $sort = 3;
 
-/**
+    /**
      * Determine if the widget should be visible.
      *
      * @return bool
@@ -23,41 +22,40 @@ class PaymentChart extends ChartWidget
     }
 
     /**
-     * Get the payment data for completed and pending status in the specified year.
+     * Get the payment data for completed (paid) status in the specified year.
      *
      * @return array
      */
-    public function getPaymentsData(int $year = null): array
+    public function getPaymentsData(int $currentYear, int $previousYear): array
     {
-        // If no year is provided, default to the current year
-        $year = $year ?? Carbon::now()->year;
-
-        // Fetch payments filtered by year
-        $paymentsCompleted = Payment::where('status', 'paid')
-            ->whereYear('created_at', $year)
+        // Fetch payments filtered by the current and previous years and status 'paid'
+        $paymentsCompletedCurrentYear = Payment::where('status', 'paid')
+            ->whereYear('created_at', $currentYear)
             ->get();
 
-        $paymentsPending = Payment::where('status', 'unpaid')
-            ->whereYear('created_at', $year)
+        $paymentsCompletedPreviousYear = Payment::where('status', 'paid')
+            ->whereYear('created_at', $previousYear)
             ->get();
 
-        // Initialize arrays to store the total amount for completed and pending payments
-        $completedPayments = 0;
-        $pendingPayments = 0;
+        // Initialize arrays to store the total amount for each month for both years
+        $monthlyRevenueCurrentYear = array_fill(0, 12, 0); // For current year (12 months)
+        $monthlyRevenuePreviousYear = array_fill(0, 12, 0); // For previous year (12 months)
 
-        // Calculate the total amount for completed payments
-        foreach ($paymentsCompleted as $payment) {
-            $completedPayments += $payment->amount;
+        // Calculate the total amount for completed (paid) payments per month for the current year
+        foreach ($paymentsCompletedCurrentYear as $payment) {
+            $month = Carbon::parse($payment->created_at)->month - 1; // Get the month index (0-11)
+            $monthlyRevenueCurrentYear[$month] += $payment->amount;
         }
 
-        // Calculate the total amount for pending payments
-        foreach ($paymentsPending as $payment) {
-            $pendingPayments += $payment->amount;
+        // Calculate the total amount for completed (paid) payments per month for the previous year
+        foreach ($paymentsCompletedPreviousYear as $payment) {
+            $month = Carbon::parse($payment->created_at)->month - 1; // Get the month index (0-11)
+            $monthlyRevenuePreviousYear[$month] += $payment->amount;
         }
 
         return [
-            'completedPayments' => $completedPayments,
-            'pendingPayments' => $pendingPayments,
+            'currentYear' => $monthlyRevenueCurrentYear,
+            'previousYear' => $monthlyRevenuePreviousYear,
         ];
     }
 
@@ -68,38 +66,47 @@ class PaymentChart extends ChartWidget
      */
     protected function getData(): array
     {
-        $year = Carbon::now()->year; // Use the current year for example
-        $paymentData = $this->getPaymentsData($year);
+        $currentYear = Carbon::now()->year; // Use the current year
+        $previousYear = $currentYear - 1; // Get the previous year
+        $paymentData = $this->getPaymentsData($currentYear, $previousYear);
 
         return [
             'datasets' => [
                 [
-                    'label' => 'Completed Payments',
-                    'data' => [$paymentData['completedPayments']],
-                    'backgroundColor' => '#36A2EB',
-                    'borderColor' => '#9BD0F5',
+                    'label' => "Revenue Generated ($currentYear)",
+                    'data' => $paymentData['currentYear'],
+                    'fill' => false, // Do not fill the area under the line
+                    'borderColor' => '#36A2EB', // Line color for the current year (Blue)
                     'borderWidth' => 2,
+                    'pointBackgroundColor' => '#36A2EB', // Point color for the current year (Blue)
+                    'pointBorderColor' => '#FFFFFF', // Point border color for the current year (White)
+                    'pointBorderWidth' => 2,
                 ],
                 [
-                    'label' => 'Pending Payments',
-                    'data' => [$paymentData['pendingPayments']],
-                    'backgroundColor' => '#FF6384',
-                    'borderColor' => '#FFB1C1',
+                    'label' => "Revenue Generated ($previousYear)",
+                    'data' => $paymentData['previousYear'],
+                    'fill' => false, // Do not fill the area under the line
+                    'borderColor' => '#FF6384', // Line color for the previous year (Red)
                     'borderWidth' => 2,
+                    'pointBackgroundColor' => '#FF6384', // Point color for the previous year (Red)
+                    'pointBorderColor' => '#FFFFFF', // Point border color for the previous year (White)
+                    'pointBorderWidth' => 2,
                 ],
             ],
-            'labels' => ['Payments'], // Single label for the entire dataset
+            'labels' => [
+                'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+            ], // Months of the year
         ];
     }
 
     /**
-     * Define the type of the chart (bar chart in this case).
+     * Define the type of the chart (line chart in this case).
      *
      * @return string
      */
     protected function getType(): string
     {
-        return 'bar'; // Use 'bar' for a bar chart
+        return 'line'; // Use 'line' for a line chart
     }
 
     /**

@@ -90,7 +90,7 @@ class PaymentPage extends Page
             Notification::make()
                 ->title('Success Payment')
                 ->body("Payment success: $text")
-                ->danger()
+                ->success()
                 ->icon('heroicon-o-banknotes')
                 ->send();
             // Return with success notification

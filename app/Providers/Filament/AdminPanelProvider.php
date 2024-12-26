@@ -3,6 +3,8 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Pages\Auth\Register;
+use App\Filament\Pages\ChangePassword;
+use App\Filament\Pages\EditPassword;
 use App\Filament\Pages\EditProfile;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -38,6 +40,13 @@ class AdminPanelProvider extends PanelProvider
                 'action' => Color::Purple,
                 'blue' => Color::Blue,
                 'viewButton' => Color::Teal,
+            ])
+            ->userMenuItems([
+            MenuItem::make()
+                ->label('Change Password')
+                ->url(fn (): string => EditProfile::getUrl(['mode' => 'password'])) // Open Edit Profile page with password mode
+                ->icon('heroicon-o-lock-closed'),
+
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
