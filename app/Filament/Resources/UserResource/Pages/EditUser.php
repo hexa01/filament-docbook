@@ -73,8 +73,9 @@ class EditUser extends EditRecord
 protected function mutateFormDataBeforeSave(array $data): array
 {
     $user = $this->record;
+
     $data['email'] = strtolower($data['email']);
-    if (isset($data['email']) && $data['email'] !== $user->email) {
+    if (isset($data['email']) && $data['email'] !== strtolower($user->email)) {
         // Check if the new email already exists in the database
         $existingEmail = User::where('email', $data['email'])->exists();
         if ($existingEmail) {

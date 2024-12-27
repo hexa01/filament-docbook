@@ -11,21 +11,11 @@ class PaymentChart extends ChartWidget
     protected static ?string $heading = 'Revenue Generated (2 Years)';
     protected static ?int $sort = 3;
 
-    /**
-     * Determine if the widget should be visible.
-     *
-     * @return bool
-     */
     public static function canView(): bool
     {
         return Auth::check() && Auth::user()->role === 'admin';
     }
 
-    /**
-     * Get the payment data for completed (paid) status in the specified year.
-     *
-     * @return array
-     */
     public function getPaymentsData(int $currentYear, int $previousYear): array
     {
         // Fetch payments filtered by the current and previous years and status 'paid'
@@ -37,19 +27,17 @@ class PaymentChart extends ChartWidget
             ->whereYear('created_at', $previousYear)
             ->get();
 
-        // Initialize arrays to store the total amount for each month for both years
-        $monthlyRevenueCurrentYear = array_fill(0, 12, 0); // For current year (12 months)
-        $monthlyRevenuePreviousYear = array_fill(0, 12, 0); // For previous year (12 months)
+        $monthlyRevenueCurrentYear = array_fill(0, 12, 0);
+        $monthlyRevenuePreviousYear = array_fill(0, 12, 0);
 
-        // Calculate the total amount for completed (paid) payments per month for the current year
+
         foreach ($paymentsCompletedCurrentYear as $payment) {
-            $month = Carbon::parse($payment->created_at)->month - 1; // Get the month index (0-11)
+            $month = Carbon::parse($payment->created_at)->month - 1;
             $monthlyRevenueCurrentYear[$month] += $payment->amount;
         }
 
-        // Calculate the total amount for completed (paid) payments per month for the previous year
         foreach ($paymentsCompletedPreviousYear as $payment) {
-            $month = Carbon::parse($payment->created_at)->month - 1; // Get the month index (0-11)
+            $month = Carbon::parse($payment->created_at)->month - 1;
             $monthlyRevenuePreviousYear[$month] += $payment->amount;
         }
 
@@ -59,11 +47,7 @@ class PaymentChart extends ChartWidget
         ];
     }
 
-    /**
-     * Prepare the data for the chart widget.
-     *
-     * @return array
-     */
+
     protected function getData(): array
     {
         $currentYear = Carbon::now()->year; // Use the current year
@@ -76,20 +60,20 @@ class PaymentChart extends ChartWidget
                     'label' => "Revenue Generated ($currentYear)",
                     'data' => $paymentData['currentYear'],
                     'fill' => false, // Do not fill the area under the line
-                    'borderColor' => '#36A2EB', // Line color for the current year (Blue)
+                    'borderColor' => '#36A2EB', //(Blue)
                     'borderWidth' => 2,
-                    'pointBackgroundColor' => '#36A2EB', // Point color for the current year (Blue)
-                    'pointBorderColor' => '#FFFFFF', // Point border color for the current year (White)
+                    'pointBackgroundColor' => '#36A2EB', //(Blue)
+                    'pointBorderColor' => '#FFFFFF',//(White)
                     'pointBorderWidth' => 2,
                 ],
                 [
                     'label' => "Revenue Generated ($previousYear)",
                     'data' => $paymentData['previousYear'],
-                    'fill' => false, // Do not fill the area under the line
-                    'borderColor' => '#FF6384', // Line color for the previous year (Red)
+                    'fill' => false,
+                    'borderColor' => '#FF6384', //(Red)
                     'borderWidth' => 2,
-                    'pointBackgroundColor' => '#FF6384', // Point color for the previous year (Red)
-                    'pointBorderColor' => '#FFFFFF', // Point border color for the previous year (White)
+                    'pointBackgroundColor' => '#FF6384', // (Red)
+                    'pointBorderColor' => '#FFFFFF', //  (White)
                     'pointBorderWidth' => 2,
                 ],
             ],
@@ -99,21 +83,11 @@ class PaymentChart extends ChartWidget
         ];
     }
 
-    /**
-     * Define the type of the chart (line chart in this case).
-     *
-     * @return string
-     */
     protected function getType(): string
     {
         return 'line'; // Use 'line' for a line chart
     }
 
-    /**
-     * Additional styling for the chart.
-     *
-     * @return array
-     */
     protected function getStyles(): array
     {
         return [

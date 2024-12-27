@@ -36,6 +36,7 @@ class AppointmentResource extends Resource
                             ->label('Patient Name')
                             ->searchable()
                             ->preload()
+                            ->disabled(fn(callable $get) => $get('id') !== null)
                             ->options(
                                 Patient::with('user')
                                     ->get()->pluck('user.name', 'id')
@@ -46,7 +47,13 @@ class AppointmentResource extends Resource
                             ->label('Specialization')
                             ->options(fn() => Specialization::pluck('name', 'id')->toArray())
                             ->required()
-                            // ->disabled(fn(callable $get) => $get('id') !== null)
+                            ->disabled(fn(callable $get) => $get('id') !== null)
+                            ->afterStateUpdated(function ($state, callable $set){
+                                $set('doctor_id', null);
+                                $set('appointment_date', null);
+                                $set('slot', null);
+                            })
+
                             ->live(),
 
 
@@ -64,13 +71,18 @@ class AppointmentResource extends Resource
                                     ->get()
                                     ->pluck('user.name', 'id');
                             })
+                            ->reactive()
+                            ->disabled(fn(callable $get) => $get('id') !== null)
+                            ->afterStateUpdated(fn ($state, callable $set) => $set('slot', null))
                             ->required(),
 
                         // Appointment Date
                         DatePicker::make('appointment_date')
                             ->required()
                             ->live()
-                            ->minDate(Carbon::tomorrow()),
+                            ->minDate(Carbon::tomorrow())
+                            ->native(false)
+                            ->afterStateUpdated(fn ($state, callable $set) => $set('slot', null)),
 
                         // Available Slots
                         Select::make('slot')
@@ -93,6 +105,8 @@ class AppointmentResource extends Resource
                                     ->toArray();
                             })
                             ->required()
+                            ->reactive()
+
                             ->searchable(),
                     ])->columns(2),
                 Forms\Components\Section::make('Appointment Status')

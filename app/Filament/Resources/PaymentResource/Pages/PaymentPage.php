@@ -5,6 +5,7 @@ namespace App\Filament\Resources\PaymentResource\Pages;
 use App\Filament\Resources\PaymentResource;
 use App\Models\Payment;
 use App\Services\AppointmentService;
+use Exception;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\Concerns\InteractsWithRecord;
 use Filament\Resources\Pages\Page;
@@ -95,7 +96,7 @@ class PaymentPage extends Page
                 ->send();
             // Return with success notification
             return redirect()->route('filament.admin.resources.payments.index')->with('success', 'Payment successfully done!');
-        } catch (CardException $e) {
+        } catch (Exception $e) {
             Notification::make()
                 ->title('Invalid Response')
                 ->body('Received an error response from Stripe.')

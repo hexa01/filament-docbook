@@ -60,6 +60,7 @@ class UserResource extends Resource
                     ->visible(fn($get) => $get('role') == 'doctor'),
                 Forms\Components\TextInput::make('address'),
                 Forms\Components\TextInput::make('phone')
+                ->minLength(10)
                 ->unique(fn(callable $get) => $get('id') == null),
                 // Forms\Components\DateTimePicker::make('email_verified_at'),
                 Forms\Components\TextInput::make('password')

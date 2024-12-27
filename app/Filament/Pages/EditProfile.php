@@ -4,10 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Models\User;
 use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Section;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Split;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Pages\Auth\EditProfile as BaseEditProfile;
@@ -27,14 +24,16 @@ class EditProfile extends BaseEditProfile
         }
     }
 
-    public static function getLabel(): string
+    public function getTitle(): string
     {
+
         if(request()->get('mode') == 'password') {
             return 'Change Password';
         }
         else {
             return 'Edit Profile';
         }
+
     }
 
 
@@ -72,7 +71,8 @@ class EditProfile extends BaseEditProfile
                                         ->required()
                                         ->displayFormat('d/m/Y'),
                                     TextInput::make('address'),
-                                    TextInput::make('phone'),
+                                    TextInput::make('phone')
+                                    ->minLength(10),
                                 ])
                                 ->columns(1),
                         ])
@@ -110,9 +110,8 @@ class EditProfile extends BaseEditProfile
         $user = Auth::user();
         if ($this->mode == 'profile') {
 
-
             $data['email'] = strtolower($data['email']);
-            if (isset($data['email']) && $data['email'] !== $user->email) {
+            if (isset($data['email']) && $data['email'] !== strtolower($user->email)) {
                 // Check if the new email already exists in the database
                 $existingEmail = User::where('email', $data['email'])->exists();
                 if ($existingEmail) {

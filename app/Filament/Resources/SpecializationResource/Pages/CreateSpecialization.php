@@ -16,7 +16,7 @@ class CreateSpecialization extends CreateRecord
         return $this->getResource()::getUrl('index');
     }
 
-    protected function getCreatedNotification(): ?Notification
+    protected function getCreatedNotification(): Notification
 {
     $name = $this->record->name;
     return Notification::make()

@@ -28,7 +28,7 @@
                             <label for="card-element" class="block text-lg font-medium text-gray-700 mb-5">Card Details</label>
                             <div id="card-element" class="form-control border border-gray-300 dark:border-gray-600 rounded-lg p-2 mb-4"></div>
 
-                            <button type="button" id="pay-btn" class="bg-green-500 text-black mt-4 w-full py-2 rounded-lg hover:bg-green-600 transition-colors " onclick="createToken()" style="color:black">
+                            <button type="button" id="pay-btn" class="bg-green-500 text-black mt-4 w-full py-2 rounded-lg hover:bg-green-600 transition-colors " onclick="createToken()" style="color:white; background-color: blue;">
                                 PAY ${{ number_format($payment->amount, 2) }}
                             </button>
                         </form>

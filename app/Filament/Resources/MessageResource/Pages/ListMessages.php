@@ -33,20 +33,25 @@ class ListMessages extends ListRecords
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('appointment.doctor.user.name')
-                    ->hidden()
+                ->label('Doctor Name')
+                ->hidden(fn()=>Auth::user()->role === 'doctor')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('appointment_id')
-                    ->label('Appointment Details')
+                Tables\Columns\TextColumn::make('appointment.patient.user.name')
+                ->label('Patient Name')
+                ->hidden(fn()=>Auth::user()->role === 'patient')
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('appointment.appointment_date')
+                    ->label('Appointment Date')
                     ->getStateUsing(fn($record) =>
                     // $record->appointment_id . ' - ' .
-                    $record->appointment->patient->user->name . ' with ' .
-                        $record->appointment->doctor->user->name . ' on ' .
+
                         $record->appointment->appointment_date)
                     ->sortable()
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('doctor_message')
-                    ->label("Doctor's Message"),
+                    ->label("Doctor's Message")
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()

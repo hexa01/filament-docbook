@@ -28,6 +28,11 @@ class AdminPanelProvider extends PanelProvider
     public function panel(Panel $panel): Panel
     {
         return $panel
+            ->spa()
+            ->sidebarCollapsibleOnDesktop()
+            // ->globalSearch()
+            
+
             ->default()
             ->id('admin')
             ->path('admin')
@@ -41,6 +46,7 @@ class AdminPanelProvider extends PanelProvider
                 'blue' => Color::Blue,
                 'viewButton' => Color::Teal,
             ])
+            ->favicon(asset('image/favicon.png'))
             ->userMenuItems([
             MenuItem::make()
                 ->label('Change Password')
